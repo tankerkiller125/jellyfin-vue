@@ -1,4 +1,4 @@
-import defu from 'defu';
+import { defu } from 'defu';
 import { ref } from 'vue';
 import type {
   RouteLocationNormalized,
@@ -11,6 +11,7 @@ const defaultMeta: RouteMeta = {
   transparentLayout: false,
   admin: false,
   backdrop: {
+    blurhash: undefined,
     opacity: 0.25
   }
 };
@@ -43,7 +44,7 @@ export function metaGuard(
   to: RouteLocationNormalized,
   from: RouteLocationNormalized
 ): boolean | RouteLocationRaw {
-  reactiveMeta.value = defu(to.meta, defaultMeta);
+  reactiveMeta.value = defu(to.meta, structuredClone(defaultMeta));
   to.meta = reactiveMeta.value;
 
   if (from.meta.transition?.leave) {
