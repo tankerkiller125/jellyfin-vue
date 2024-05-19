@@ -13,7 +13,7 @@
           cols="12"
           md="9">
           <h1
-            class="text-h4 font-weight-light"
+            class="text-h4"
             :class="{ 'text-center': !$vuetify.display.mdAndUp }">
             {{ item.Name }}
           </h1>
@@ -142,13 +142,11 @@
               class="text-subtitle-1 text-truncate">
               {{ item.Taglines[0] }}
             </p>
-            <!-- eslint-disable vue/no-v-html -
-              Output is properly sanitized using sanitizeHtml -->
             <p
               v-if="item.Overview"
-              class="item-overview"
-              v-html="sanitizeHtml(item.Overview, true)" />
-            <!-- eslint-enable vue/no-v-html -->
+              class="item-overview">
+              <JSafeHtml :html="item.Overview" markdown />
+            </p>
           </div>
         </VCol>
       </VRow>
@@ -191,7 +189,6 @@ import { computed } from 'vue';
 import { useRoute } from 'vue-router/auto';
 import { getItemDetailsLink } from '@/utils/items';
 import { getBlurhash } from '@/utils/images';
-import { sanitizeHtml } from '@/utils/html';
 import { useBaseItem } from '@/composables/apis';
 
 const route = useRoute('/series/[itemId]');
@@ -205,25 +202,25 @@ const { data: relatedItems } = await useBaseItem(getLibraryApi, 'getSimilarItems
 }));
 
 const crew = computed<BaseItemPerson[]>(() =>
-  (item.value.People ?? []).filter((person) =>
-    ['Director', 'Writer'].includes(person?.Type ?? '')
+  (item.value.People ?? []).filter(person =>
+    ['Director', 'Writer'].includes(person.Type ?? '')
   )
 );
 
 const actors = computed<BaseItemPerson[]>(() =>
   (item.value.People ?? [])
-    .filter((person) => person.Type === 'Actor')
+    .filter(person => person.Type === 'Actor')
     .slice(0, 10)
 );
 
 const directors = computed(() =>
-  crew.value.filter((person) => person.Type === 'Director')
+  crew.value.filter(person => person.Type === 'Director')
 );
 
 const writers = computed(() =>
-  crew.value.filter((person) => person.Type === 'Writer')
+  crew.value.filter(person => person.Type === 'Writer')
 );
 
 route.meta.title = item.value.Name;
-route.meta.backdrop.blurhash = getBlurhash(item.value, ImageType.Backdrop);
+route.meta.layout.backdrop.blurhash = getBlurhash(item.value, ImageType.Backdrop);
 </script>

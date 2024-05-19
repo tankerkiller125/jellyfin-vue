@@ -1,10 +1,14 @@
 import { useWebSocket } from '@vueuse/core';
 import { destr } from 'destr';
 import { computed, watch } from 'vue';
-import auth from '../auth';
-import sdk from '../sdk';
-import type { WebSocketMessage } from './types';
+import auth from './auth';
+import sdk from './sdk';
 import { isNil, sealed } from '@/utils/validation';
+
+interface WebSocketMessage {
+  MessageType: string;
+  Data?: unknown;
+}
 
 @sealed
 class RemotePluginSocket {
@@ -13,10 +17,10 @@ class RemotePluginSocket {
    */
   private readonly _socketUrl = computed(() => {
     if (
-      auth.currentUserToken &&
-      auth.currentServer &&
-      sdk.deviceInfo.id &&
-      sdk.api?.basePath
+      auth.currentUserToken
+      && auth.currentServer
+      && sdk.deviceInfo.id
+      && sdk.api?.basePath
     ) {
       const socketParameters = new URLSearchParams({
         api_key: auth.currentUserToken,
@@ -28,6 +32,7 @@ class RemotePluginSocket {
         .replace('http:', 'ws:');
     }
   });
+
   private readonly _keepAliveMessage = 'KeepAlive';
   private readonly _forceKeepAliveMessage = 'ForceKeepAlive';
   /**
@@ -36,15 +41,17 @@ class RemotePluginSocket {
   private readonly _webSocket = useWebSocket(this._socketUrl, {
     autoReconnect: { retries: () => true }
   });
+
   private readonly _parsedmsg = computed<WebSocketMessage | undefined>(() => destr(this._webSocket.data.value));
   public readonly message = computed<WebSocketMessage | undefined>((previous) => {
-    if (this._parsedmsg.value?.MessageType === this._keepAliveMessage ||
-      this._parsedmsg.value?.MessageType === this._forceKeepAliveMessage) {
+    if (this._parsedmsg.value?.MessageType === this._keepAliveMessage
+      || this._parsedmsg.value?.MessageType === this._forceKeepAliveMessage) {
       return previous;
     }
 
     return this._parsedmsg.value;
   });
+
   public readonly isConnected = computed(() => this._webSocket.status.value === 'OPEN');
 
   /**

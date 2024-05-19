@@ -4,7 +4,7 @@
       <VCol
         md="6"
         class="pt-0 pb-4">
-        <VFadeTransition group>
+        <JTransition group>
           <h2
             key="logs-title"
             class="text-h6 mb-2">
@@ -42,12 +42,12 @@
               {{ t('noLogsFound') }}
             </VCardTitle>
           </VCard>
-        </VFadeTransition>
+        </JTransition>
       </VCol>
       <VCol
         md="6"
         class="pt-0 pb-4">
-        <VFadeTransition group>
+        <JTransition group>
           <h2
             key="activity-title"
             class="text-h6 mb-2">
@@ -80,7 +80,7 @@
               {{ t('noActivityFound') }}
             </VCardTitle>
           </VCard>
-        </VFadeTransition>
+        </JTransition>
       </VCol>
     </template>
   </SettingsPage>
@@ -194,8 +194,9 @@ function getFormattedLogDate(date: string | undefined): string | undefined {
  * Creates a link to the given type of log file
  */
 function getLogFileLink(name: string): string | undefined {
-  return remote.sdk.api?.basePath && remote.auth.currentUserToken ?
-    `${remote.sdk.api?.basePath}/System/Logs/Log?name=${name}&api_key=${remote.auth.currentUserToken}` : undefined;
+  return remote.sdk.api?.basePath && remote.auth.currentUserToken
+    ? `${remote.sdk.api.basePath}/System/Logs/Log?name=${name}&api_key=${remote.auth.currentUserToken}`
+    : undefined;
 }
 
 const { data: logs } = await useApi(getSystemApi, 'getServerLogs')();

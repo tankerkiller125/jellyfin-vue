@@ -7,13 +7,10 @@
     <Component
       :is="probeTag"
       ref="probeRef"
+      class="uno-invisible uno-pointer-events-none uno-place-self-stretch uno-opacity-0"
       :style="{
-        opacity: 0,
-        visibility: 'hidden',
         gridArea: '1/1',
-        pointerEvents: 'none',
-        zIndex: -1,
-        placeSelf: 'stretch'
+        zIndex: -1
       }">
       <slot
         :item="items[0]"
@@ -110,19 +107,19 @@ const eventCleanups: Fn[] = [];
  * Vue to track.
  */
 const resizeMeasurement = computed(() => {
-  return rootRef.value &&
-    itemRect.value &&
-    displayWidth.value !== undefined &&
-    displayHeight.value !== undefined &&
-    !isNil(props.items)
+  return rootRef.value
+    && itemRect.value
+    && displayWidth.value !== undefined
+    && displayHeight.value !== undefined
+    && !isNil(props.items)
     ? getResizeMeasurement(rootRef.value, itemRect.value)
     : undefined;
 });
 const contentSize = computed(() => {
-  return resizeMeasurement.value &&
-    displayWidth.value !== undefined &&
-    displayHeight.value !== undefined &&
-    !isNil(props.items)
+  return resizeMeasurement.value
+    && displayWidth.value !== undefined
+    && displayHeight.value !== undefined
+    && !isNil(props.items)
     ? getContentSize(resizeMeasurement.value, props.items.length)
     : undefined;
 });
@@ -139,11 +136,11 @@ const rootStyles = computed<StyleValue>(() => {
  */
 const boundingClientRect = computed(() => {
   if (
-    displayWidth.value !== undefined &&
-    displayHeight.value !== undefined &&
-    !isNil(rootRef.value) &&
-    !isNil(scrollEvents.value) &&
-    !isNil(props.items)
+    displayWidth.value !== undefined
+    && displayHeight.value !== undefined
+    && !isNil(rootRef.value)
+    && !isNil(scrollEvents.value)
+    && !isNil(props.items)
   ) {
     return rootRef.value.getBoundingClientRect();
   }

@@ -1,13 +1,15 @@
 <template>
-  <VSlideYReverseTransition mode="out-in">
+  <JTransition
+    name="slide-y-reverse"
+    mode="out-in">
     <VFooter
       v-if="
         playbackManager.isPlaying &&
-          playbackManager.currentlyPlayingMediaType === 'Audio' &&
-          playbackManager.currentItem
+          playbackManager.isAudio &&
+          !isNil(playbackManager.currentItem)
       "
       app
-      class="user-select-none pa-0">
+      class="uno-select-none pa-0">
       <VContainer fluid>
         <VRow class="ma-0">
           <VCol
@@ -15,11 +17,9 @@
             md="3"
             class="d-flex flex-row pa-0">
             <RouterLink :to="'/playback/music'">
-              <VAvatar
-                :size="$vuetify.display.xs ? 50 : 85"
-                color="primary">
+              <div class="uno-w-20 uno-h-20 img">
                 <BlurhashImage :item="playbackManager.currentItem" />
-              </VAvatar>
+              </div>
             </RouterLink>
             <VCol class="d-flex flex-column justify-center ml-4">
               <VRow class="align-end">
@@ -28,7 +28,7 @@
                   :to="getItemDetailsLink(playbackManager.currentItem)"
                   custom>
                   <span
-                    class="text-truncate link height-fit-content"
+                    class="text-truncate link uno-h-fit"
                     @click="navigate">
                     {{ playbackManager.currentItem.Name }}
                   </span>
@@ -46,7 +46,7 @@
                       :to="getItemDetailsLink(artist, 'MusicArtist')"
                       custom>
                       <span
-                        class="font-weight-light text-caption text-truncate link"
+                        class="text-caption text-truncate link"
                         @click="navigate">
                         {{ artist.Name }}
                       </span>
@@ -105,16 +105,25 @@
         </VRow>
       </VContainer>
     </VFooter>
-  </VSlideYReverseTransition>
+  </JTransition>
 </template>
 
 <script setup lang="ts">
+import { isNil } from '@/utils/validation';
 import { playbackManager } from '@/store/playback-manager';
 import { getItemDetailsLink } from '@/utils/items';
 </script>
 
-<style lang="scss" scoped>
-.height-fit-content {
-  height: fit-content;
+<style scoped>
+/* TODO: This class was extracted from VAvatar. Remove this once a JAvatar component is created */
+.img {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  line-height: normal;
+  overflow: hidden;
+  position: relative;
+  text-align: center;
+  vertical-align: middle;
 }
 </style>

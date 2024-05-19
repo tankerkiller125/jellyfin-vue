@@ -13,7 +13,7 @@
           cols="12"
           md="9">
           <h1
-            class="text-h5 text-sm-h4 font-weight-light"
+            class="text-h5 text-sm-h4"
             :class="{ 'text-center': !$vuetify.display.mdAndUp }">
             {{ item.Name }}
           </h1>
@@ -258,13 +258,11 @@
               class="text-subtitle-1 text-truncate">
               {{ item.Taglines[0] }}
             </p>
-            <!-- eslint-disable vue/no-v-html -
-              Output is properly sanitized using sanitizeHtml -->
             <p
               v-if="item.Overview"
-              class="item-overview"
-              v-html="sanitizeHtml(item.Overview, true)" />
-            <!-- eslint-enable vue/no-v-html -->
+              class="item-overview">
+              <JSafeHtml :html="item.Overview" markdown />
+          </p>
           </div>
         </VCol>
       </VRow>
@@ -309,7 +307,6 @@ import { computed, ref } from 'vue';
 import { useRoute } from 'vue-router/auto';
 import { getItemDetailsLink, getMediaStreams } from '@/utils/items';
 import { getBlurhash } from '@/utils/images';
-import { sanitizeHtml } from '@/utils/html';
 import { getItemizedSelect } from '@/utils/forms';
 import { useBaseItem } from '@/composables/apis';
 
@@ -339,21 +336,21 @@ const currentAudioTrack = ref<number>();
 const currentSubtitleTrack = ref<number>();
 
 const crew = computed<BaseItemPerson[]>(() =>
-  (item.value.People ?? []).filter((person) =>
-    ['Director', 'Writer'].includes(person?.Type ?? '')
+  (item.value.People ?? []).filter(person =>
+    ['Director', 'Writer'].includes(person.Type ?? '')
   )
 );
 
 const actors = computed<BaseItemPerson[]>(() =>
-  (item.value.People ?? []).filter((person) => person.Type === 'Actor').slice(0, 10)
+  (item.value.People ?? []).filter(person => person.Type === 'Actor').slice(0, 10)
 );
 
 const directors = computed<BaseItemPerson[]>(() =>
-  crew.value.filter((person) => person.Type === 'Director')
+  crew.value.filter(person => person.Type === 'Director')
 );
 
 const writers = computed<BaseItemPerson[]>(() =>
-  crew.value.filter((person) => person.Type === 'Writer')
+  crew.value.filter(person => person.Type === 'Writer')
 );
 
 const selectSources = computed(() =>
@@ -361,12 +358,12 @@ const selectSources = computed(() =>
 );
 
 const currentSourceIndex = computed(() =>
-  selectSources.value.findIndex((el) => el.value.Id === currentSource.value.Id)
+  selectSources.value.findIndex(el => el.value.Id === currentSource.value.Id)
 );
 
 const currentSource = computed({
   get() {
-    return selectedSource.value ?? item.value?.MediaSources?.[0] ?? {};
+    return selectedSource.value ?? item.value.MediaSources?.[0] ?? {};
   },
   set(newValue) {
     selectedSource.value = newValue;
@@ -374,5 +371,5 @@ const currentSource = computed({
 });
 
 route.meta.title = item.value.Name;
-route.meta.backdrop.blurhash = getBlurhash(item.value, ImageType.Backdrop);
+route.meta.layout.backdrop.blurhash = getBlurhash(item.value, ImageType.Backdrop);
 </script>

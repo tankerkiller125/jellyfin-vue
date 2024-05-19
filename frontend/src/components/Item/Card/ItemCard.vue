@@ -9,8 +9,7 @@
     <template #image>
       <BlurhashImage
         :item="item"
-        :type="getImageType"
-        :alt="item.Name || ''" />
+        :type="getImageType" />
     </template>
     <template #upper-content>
       <VProgressCircular
@@ -115,10 +114,12 @@ const cardTitle = computed(() =>
 const cardSubtitle = computed(() => {
   switch (props.item.Type) {
     case BaseItemKind.Episode: {
-      return !isNil(props.item.ParentIndexNumber) && !isNil(props.item.IndexNumber) && !isNil(props.item.Name) ? `${t('seasonEpisodeAbbrev', {
+      return !isNil(props.item.ParentIndexNumber) && !isNil(props.item.IndexNumber) && !isNil(props.item.Name)
+        ? `${t('seasonEpisodeAbbrev', {
         seasonNumber: props.item.ParentIndexNumber,
         episodeNumber: props.item.IndexNumber
-      })} - ${props.item.Name}` : undefined;
+      })} - ${props.item.Name}`
+        : undefined;
     }
     case BaseItemKind.MusicAlbum: {
       return props.item.AlbumArtist;
@@ -127,7 +128,7 @@ const cardSubtitle = computed(() => {
       if (props.item.Status === 'Continuing' && !isNil(props.item.ProductionYear)) {
         return `${props.item.ProductionYear} - ${t('present')}`;
       } else if (props.item.EndDate) {
-        const endYear = new Date(props.item?.EndDate).toLocaleString('en-us', {
+        const endYear = new Date(props.item.EndDate).toLocaleString('en-us', {
           year: 'numeric'
         });
 
@@ -135,7 +136,7 @@ const cardSubtitle = computed(() => {
           return String(props.item.ProductionYear);
         }
 
-        return isNil(props.item.ProductionYear) ? undefined: `${props.item.ProductionYear} - ${endYear}`;
+        return isNil(props.item.ProductionYear) ? undefined : `${props.item.ProductionYear} - ${endYear}`;
       }
 
       break;
@@ -166,9 +167,9 @@ const cardTitleLink = computed(() => {
  */
 const cardSubtitleLink = computed(() => {
   if (
-    props.item.Type === BaseItemKind.MusicAlbum &&
-    props.item.AlbumArtists &&
-    props.item.AlbumArtists.length > 0
+    props.item.Type === BaseItemKind.MusicAlbum
+    && props.item.AlbumArtists
+    && props.item.AlbumArtists.length > 0
   ) {
     return getItemDetailsLink(props.item.AlbumArtists[0], 'MusicArtist');
   } else if (props.item.Type === BaseItemKind.Episode) {

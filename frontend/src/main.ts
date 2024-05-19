@@ -3,7 +3,6 @@
  * for TypeScript compiler (check tsconfig.json)
  * https://caniuse.com/mdn-javascript_operators_await_top_level
  */
-
 import { createApp } from 'vue';
 import { routes } from 'vue-router/auto-routes';
 import Root from '@/App.vue';
@@ -16,20 +15,12 @@ import { vuetify } from '@/plugins/vuetify';
 /**
  * - GLOBAL STYLES -
  */
-import 'inter-ui/inter-variable.css';
-/**
- * TODO: Re-enable once Vuetify is gone
- */
-/*
- * import 'uno.css';
- * import 'virtual:unocss-devtools';
- */
-/**
- *  Unocss already includes the reset, no need of @unocss/reset
- */
+import '@fontsource-variable/figtree';
 /* eslint-disable-next-line import/no-extraneous-dependencies */
 import '@unocss/reset/tailwind-compat.css';
-import '@/assets/styles/global.scss';
+import 'uno.css';
+import 'virtual:unocss-devtools';
+import '@/assets/styles/global.css';
 
 /**
  * - VUE PLUGINS, STORE AND DIRECTIVE -
@@ -63,9 +54,5 @@ await router.isReady();
 
 /**
  * MOUNTING POINT
- *
- * See how we remove the splashcreen on App.vue file
  */
-window.requestAnimationFrame(() => {
-  app.mount('#app');
-});
+app.mount(document.body);

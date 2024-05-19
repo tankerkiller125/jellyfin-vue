@@ -216,8 +216,8 @@ const yearFilters = ref<number[]>([]);
 
 const isMovieOrTvShow = computed(
   () =>
-    props.item.CollectionType === 'movies' ||
-    props.item.CollectionType === 'tvshows'
+    props.item.CollectionType === 'movies'
+    || props.item.CollectionType === 'tvshows'
 );
 
 const statusFilters = computed<{ label: string; name: ItemFilter }[]>(() => [
@@ -323,7 +323,7 @@ function emitFilterChange(): void {
 watch(() => props.item, refreshItems);
 </script>
 
-<style lang="scss" scoped>
+<style scoped>
 .filter-content {
   max-height: 15rem;
 }

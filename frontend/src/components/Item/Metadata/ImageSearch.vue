@@ -67,10 +67,9 @@
           sm="6"
           cols="12">
           <VCard class="ma-2">
-            <VImg
+            <JImg
               v-if="item.Url"
-              :src="item.Url"
-              :aspect-ratio="getContainerAspectRatioForImageType(item.Type)" />
+              :src="item.Url" />
             <div class="text-center text-truncate text-subtitle-1 mt-2">
               {{ item.ProviderName }}
             </div>
@@ -122,7 +121,6 @@ import {
 import { getRemoteImageApi } from '@jellyfin/sdk/lib/utils/api/remote-image-api';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { getContainerAspectRatioForImageType } from '@/utils/images';
 import { getLocaleName } from '@/utils/i18n';
 import { remote } from '@/plugins/remote';
 
@@ -195,12 +193,11 @@ const types = computed(() => [
 const sources = computed(() =>
   providers.value
     .filter(
-      (provider) =>
-        provider.Name &&
-        provider.SupportedImages &&
-        provider.SupportedImages.includes(type.value)
+      provider =>
+        provider.Name
+        && provider.SupportedImages?.includes(type.value)
     )
-    .map((provider) => provider.Name ?? '')
+    .map(provider => provider.Name ?? '')
 );
 
 /**
@@ -227,8 +224,8 @@ async function getImages(): Promise<void> {
   }
 
   loading.value = true;
-  images.value =
-    (
+  images.value
+    = (
       await remote.sdk.newUserApi(getRemoteImageApi).getRemoteImages({
         itemId: props.metadata.Id,
         type: type.value,
@@ -285,7 +282,7 @@ watch(
 );
 </script>
 
-<style lang="scss" scoped>
+<style scoped>
 .loading-bar {
   position: absolute;
   top: 50%;

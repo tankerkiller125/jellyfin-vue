@@ -8,10 +8,8 @@
         {{ genre.Name }}
       </span>
       <VSpacer />
-      <VFadeTransition>
-        <PlayButton
-          :item="genre" />
-      </VFadeTransition>
+      <PlayButton
+        :item="genre" />
       <VBtn
         class="play-button mr-2"
         min-width="8em"
@@ -87,7 +85,7 @@ const { data: genres } = await useBaseItem(getItemsApi, 'getItems')(() => ({
 route.meta.title = genre.value.Name;
 </script>
 
-<style lang="scss" scoped>
+<style scoped>
 .second-toolbar {
   top: 56px;
 }

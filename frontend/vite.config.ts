@@ -1,6 +1,7 @@
 import VueI18nPlugin from '@intlify/unplugin-vue-i18n/vite';
-import virtual from '@rollup/plugin-virtual';
-import vue from '@vitejs/plugin-vue';
+import Virtual from '@rollup/plugin-virtual';
+import VueMacros from 'unplugin-vue-macros/vite';
+import Vue from '@vitejs/plugin-vue';
 import browserslist from 'browserslist';
 import { browserslistToTargets } from 'lightningcss';
 import { visualizer } from 'rollup-plugin-visualizer';
@@ -14,7 +15,6 @@ import {
 import Components from 'unplugin-vue-components/vite';
 import RadixVueResolver from 'radix-vue/resolver';
 import UnoCSS from 'unocss/vite';
-import { presetUno } from 'unocss';
 import VueRouter from 'unplugin-vue-router/vite';
 import { defineConfig, type UserConfig } from 'vite';
 import { entrypoints, localeFilesFolder, srcRoot } from './scripts/paths';
@@ -26,14 +26,24 @@ export default defineConfig(({ mode }): UserConfig => {
     base: './',
     cacheDir: '../node_modules/.cache/vite',
     plugins: [
-      virtual(virtualModules),
+      Virtual(virtualModules),
       VueRouter({
         dts: './types/global/routes.d.ts',
         importMode: 'sync',
         routeBlockLang: 'yaml'
       }),
-      vue(),
-      // This plugin allows to autoimport vue components
+      VueMacros({
+        plugins: {
+          vue: Vue({
+            template: {
+              transformAssetUrls: {
+                img: []
+              }
+            }
+          })
+        }
+      }),
+      // This plugin allows to autoimport Vue components
       Components({
         dts: './types/global/components.d.ts',
         /**
@@ -64,11 +74,7 @@ export default defineConfig(({ mode }): UserConfig => {
         forceStringify: true,
         include: localeFilesFolder
       }),
-      UnoCSS({
-        presets: [
-          presetUno()
-        ]
-      })
+      UnoCSS()
     ],
     build: {
       /**
@@ -79,7 +85,7 @@ export default defineConfig(({ mode }): UserConfig => {
        * Disable chunk size warnings
        */
       chunkSizeWarningLimit: Number.NaN,
-      cssCodeSplit: false,
+      cssCodeSplit: true,
       cssMinify: 'lightningcss',
       modulePreload: false,
       reportCompressedSize: false,
@@ -94,13 +100,12 @@ export default defineConfig(({ mode }): UserConfig => {
             /**
              * This is the default value: https://rollupjs.org/configuration-options/#output-chunkfilenames
              */
-            return chunkInfo.name === 'index' ? 'assets/common-[hash].js': '[name]-[hash].js';
+            return chunkInfo.name === 'validation' ? 'assets/common-[hash].js' : '[name]-[hash].js';
           },
           validate: true,
           plugins: [
             mode === 'analyze'
-              ?
-              visualizer({
+              ? visualizer({
                 open: true,
                 filename: 'dist/stats.html'
               })
@@ -115,8 +120,8 @@ export default defineConfig(({ mode }): UserConfig => {
            */
           manualChunks(id) {
             if (
-              id.includes('virtual:locales') ||
-              id.includes('@intlify/unplugin-vue-i18n/messages')
+              id.includes('virtual:locales')
+              || id.includes('@intlify/unplugin-vue-i18n/messages')
             ) {
               return 'assets/locales';
             }

@@ -7,7 +7,7 @@
 import JASSUB from 'jassub';
 import jassubWorker from 'jassub/dist/jassub-worker.js?url';
 import jassubWasmUrl from 'jassub/dist/jassub-worker.wasm?url';
-import { computed, nextTick, watch } from 'vue';
+import { computed, nextTick, shallowRef, watch } from 'vue';
 import { playbackManager } from './playback-manager';
 import { isArray, isNil, sealed } from '@/utils/validation';
 import { mediaElementRef } from '@/store';
@@ -19,10 +19,10 @@ import { remote } from '@/plugins/remote';
  * == INTERFACES AND TYPES ==
  */
 interface PlayerElementState {
-  isFullscreenMounted: boolean;
-  isPiPMounted: boolean;
   isStretched: boolean;
 }
+
+export const videoContainerRef = shallowRef<HTMLDivElement>();
 
 /**
  * == CLASS CONSTRUCTOR ==
@@ -36,22 +36,6 @@ class PlayerElementStore extends CommonStore<PlayerElementState> {
   private readonly _fullscreenVideoRoute = '/playback/video';
   private _jassub: JASSUB | undefined;
   protected _storeKey = 'playerElement';
-  /**
-   * == GETTERS AND SETTERS ==
-   */
-  public readonly isFullscreenMounted = computed({
-    get: () => this._state.isFullscreenMounted,
-    set: (newVal: boolean) => {
-      this._state.isFullscreenMounted = newVal;
-    }
-  });
-
-  public readonly isPiPMounted = computed({
-    get: () => this._state.isPiPMounted,
-    set: (newVal: boolean) => {
-      this._state.isPiPMounted = newVal;
-    }
-  });
 
   public readonly isStretched = computed({
     get: () => this._state.isStretched,
@@ -60,15 +44,11 @@ class PlayerElementStore extends CommonStore<PlayerElementState> {
     }
   });
 
-  public readonly isFullscreenVideoPlayer = computed(
-    () => router.currentRoute.value.fullPath === this._fullscreenVideoRoute
-  );
-
   /**
    * == ACTIONS ==
    */
   public readonly toggleFullscreenVideoPlayer = async (): Promise<void> => {
-    if (this.isFullscreenVideoPlayer.value) {
+    if (router.currentRoute.value.fullPath === this._fullscreenVideoRoute) {
       router.back();
     } else {
       await router.push(this._fullscreenVideoRoute);
@@ -77,9 +57,9 @@ class PlayerElementStore extends CommonStore<PlayerElementState> {
 
   private readonly _setSsaTrack = (trackSrc: string, attachedFonts?: string[]): void => {
     if (
-      !this._jassub &&
-      mediaElementRef.value &&
-      mediaElementRef.value instanceof HTMLVideoElement
+      !this._jassub
+      && mediaElementRef.value
+      && mediaElementRef.value instanceof HTMLVideoElement
     ) {
       this._jassub = new JASSUB({
         video: mediaElementRef.value,
@@ -105,7 +85,7 @@ class PlayerElementStore extends CommonStore<PlayerElementState> {
     }
   };
 
-  public readonly freeSsaTrack = (): void => {
+  private readonly _freeSsaTrack = (): void => {
     if (this._jassub) {
       try {
         this._jassub.destroy();
@@ -117,11 +97,11 @@ class PlayerElementStore extends CommonStore<PlayerElementState> {
 
   private readonly _isSupportedFont = (mimeType: string | undefined | null): boolean => {
     return (
-      !isNil(mimeType) &&
-      mimeType.startsWith('font/') &&
-      (mimeType.includes('ttf') ||
-      mimeType.includes('otf') ||
-      mimeType.includes('woff'))
+      !isNil(mimeType)
+      && mimeType.startsWith('font/')
+      && (mimeType.includes('ttf')
+      || mimeType.includes('otf')
+      || mimeType.includes('woff'))
     );
   };
 
@@ -143,13 +123,13 @@ class PlayerElementStore extends CommonStore<PlayerElementState> {
      * Finding (if it exists) the VTT or SSA track associated to the newly picked subtitle
      */
     const vttIdx = playbackManager.currentItemVttParsedSubtitleTracks.findIndex(
-      (sub) => sub.srcIndex === playbackManager.currentSubtitleStreamIndex
+      sub => sub.srcIndex === playbackManager.currentSubtitleStreamIndex
     );
     const ass = playbackManager.currentItemAssParsedSubtitleTracks.find(
-      (sub) => sub.srcIndex === playbackManager.currentSubtitleStreamIndex
+      sub => sub.srcIndex === playbackManager.currentSubtitleStreamIndex
     );
-    const attachedFonts =
-      playbackManager.currentMediaSource?.MediaAttachments?.filter((a) =>
+    const attachedFonts
+      = playbackManager.currentMediaSource?.MediaAttachments?.filter(a =>
         this._isSupportedFont(a.MimeType)
       )
         .map((a) => {
@@ -174,7 +154,7 @@ class PlayerElementStore extends CommonStore<PlayerElementState> {
       }
     }
 
-    playerElement.freeSsaTrack();
+    this._freeSsaTrack();
 
     if (vttIdx !== -1 && mediaElementRef.value.textTracks[vttIdx]) {
       /**
@@ -185,14 +165,12 @@ class PlayerElementStore extends CommonStore<PlayerElementState> {
       /**
        * If SSA, using Subtitle Opctopus
        */
-      playerElement._setSsaTrack(ass.src, attachedFonts);
+      this._setSsaTrack(ass.src, attachedFonts);
     }
   };
 
   public constructor() {
     super('playerElement', {
-      isFullscreenMounted: false,
-      isPiPMounted: false,
       isStretched: false
     });
 
@@ -201,17 +179,31 @@ class PlayerElementStore extends CommonStore<PlayerElementState> {
      * * Move user out of the fullscreen pages when playback is over
      */
     watch(
-      () => playbackManager.currentItem,
+      () => playbackManager.isVideo,
       async (newValue, oldValue) => {
         if (
-          newValue &&
-          !oldValue &&
-          playbackManager.currentlyPlayingMediaType === 'Video'
+          newValue
+          && !oldValue
         ) {
           await this.toggleFullscreenVideoPlayer();
         }
       }
     );
+
+    /**
+     * We need to destroy JASSUB so the canvas can be recreated in the other view
+     */
+    watch(videoContainerRef, () => {
+      if (!videoContainerRef.value) {
+        this._freeSsaTrack();
+      }
+    }, { flush: 'sync' });
+
+    watch([() => playbackManager.currentSubtitleStreamIndex, videoContainerRef], async (newVal) => {
+      if (newVal[1]) {
+        await this.applyCurrentSubtitle();
+      }
+    }, { flush: 'post' });
 
     watch(
       () => remote.auth.currentUser,

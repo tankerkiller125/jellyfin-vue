@@ -6,9 +6,9 @@ import { isNil } from '@/utils/validation';
 export type Persistence = 'localStorage' | 'sessionStorage';
 
 export abstract class CommonStore<T extends object> {
-  protected _storeKey: string;
-  private _defaultState: T;
-  private _internalState: T | RemovableRef<T>;
+  protected readonly _storeKey: string;
+  private readonly _defaultState: T;
+  private readonly _internalState: T | RemovableRef<T>;
 
   protected get _state(): T {
     return isRef(this._internalState) ? this._internalState.value : this._internalState;
@@ -30,8 +30,9 @@ export abstract class CommonStore<T extends object> {
       storage = sessionStorage;
     }
 
-    this._internalState = isNil(storage) ? reactive(structuredClone(defaultState)) as T :
-      useStorage(storeKey, structuredClone(defaultState), storage, {
+    this._internalState = isNil(storage)
+      ? reactive(structuredClone(defaultState)) as T
+      : useStorage(storeKey, structuredClone(defaultState), storage, {
         mergeDefaults: (storageValue, defaults) =>
           mergeExcludingUnknown(storageValue, defaults)
       });

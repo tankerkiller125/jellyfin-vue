@@ -12,7 +12,7 @@ import { i18n } from '@/plugins/i18n';
 
 export abstract class SyncedStore<T extends object> extends CommonStore<T> {
   private readonly _clientSyncName = 'vue';
-  private readonly _syncedKeys: Array<keyof T> = [];
+  private readonly _syncedKeys: (keyof T)[] = [];
   private readonly _pausableWatchers: WatchPausableReturn[] = [];
   /**
    * Serializes custom pref values for storage as string
@@ -79,7 +79,7 @@ export abstract class SyncedStore<T extends object> extends CommonStore<T> {
   /**
    * Updates CustomPrefs by merging passed in value with existing custom prefs
    */
-  private _updateState = async (): Promise<void> => {
+  private readonly _updateState = async (): Promise<void> => {
     if (remote.auth.currentUser) {
       /**
        * Creates a config syncing task, so UI can show that there's a syncing in progress
@@ -131,12 +131,13 @@ export abstract class SyncedStore<T extends object> extends CommonStore<T> {
       }
     }
   };
+
   /**
    * This store syncs the state of the parent store with the remote server.
    *
    * @param keys - The keys to be synced with the server. If not provided, all keys will be synced
    */
-  protected constructor(storeKey: string, defaultState: T, persistence?: Persistence, keys?: Array<keyof T>) {
+  protected constructor(storeKey: string, defaultState: T, persistence?: Persistence, keys?: (keyof T)[]) {
     super(storeKey, defaultState, persistence);
     this._syncedKeys = keys ?? [];
 

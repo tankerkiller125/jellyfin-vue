@@ -1,9 +1,10 @@
 <template>
   <VAvatar :size="size">
-    <VImg
+    <JImg
       :src="url"
-      :width="size"
-      cover>
+      :transition-props="{
+        mode: 'out-in'
+      }">
       <template #placeholder>
         <VAvatar
           color="primary"
@@ -13,7 +14,7 @@
           </VIcon>
         </VAvatar>
       </template>
-    </VImg>
+    </JImg>
   </VAvatar>
 </template>
 
@@ -33,7 +34,7 @@ const props = withDefaults(
 );
 
 const url = computed(() => {
-  return props.user?.Id && props.user?.PrimaryImageTag && remote.sdk.api?.basePath
+  return props.user.Id && props.user.PrimaryImageTag && remote.sdk.api?.basePath
     ? `${remote.sdk.api.basePath}/Users/${props.user.Id}/Images/Primary/?tag=${props.user.PrimaryImageTag}&quality=${props.quality}`
     : undefined;
 });

@@ -18,7 +18,7 @@
                 class="text-subtitle-1 text--secondary font-weight-medium text-capitalize">
                 {{ $t('artist') }}
               </div>
-              <h1 class="text-h4 text-md-h2 font-weight-light">
+              <h1 class="text-h4 text-md-h2">
                 {{ item.Name }}
               </h1>
             </div>
@@ -117,13 +117,11 @@
                     <VCol
                       cols="12"
                       md="7">
-                      <!-- eslint-disable vue/no-v-html -
-                        Output is properly sanitized using sanitizeHtml -->
                       <span
                         v-if="item.Overview"
-                        class="item-overview"
-                        v-html="sanitizeHtml(item.Overview, true)" />
-                      <!-- eslint-enable vue/no-v-html -->
+                        class="item-overview">
+                        <JSafeHtml :html="item.Overview" markdown />
+                      </span>
                     </VCol>
                   </VCol>
                 </VRow>
@@ -158,7 +156,6 @@ import { useRoute } from 'vue-router/auto';
 import { msToTicks } from '@/utils/time';
 import { defaultSortOrder as sortBy } from '@/utils/items';
 import { getBlurhash } from '@/utils/images';
-import { sanitizeHtml } from '@/utils/html';
 import { useBaseItem } from '@/composables/apis';
 
 const SINGLE_MAX_LENGTH_MS = 600_000;
@@ -198,35 +195,34 @@ const { data: musicVideos } = await useBaseItem(getItemsApi, 'getItems')(() => (
   includeItemTypes: [BaseItemKind.MusicVideo]
 }));
 
-
 const singles = computed<BaseItemDto[]>(() =>
   discography.value.filter(
-    (album) =>
-      (album?.RunTimeTicks ?? album?.CumulativeRunTimeTicks ?? 0) <=
-      msToTicks(SINGLE_MAX_LENGTH_MS)
+    album =>
+      (album.RunTimeTicks ?? album.CumulativeRunTimeTicks ?? 0)
+      <= msToTicks(SINGLE_MAX_LENGTH_MS)
   )
 );
 
 const eps = computed(() =>
   discography.value.filter(
-    (album) =>
-      (album?.RunTimeTicks ?? album?.CumulativeRunTimeTicks ?? 0) >
-      msToTicks(SINGLE_MAX_LENGTH_MS) &&
-      (album?.RunTimeTicks ?? album?.CumulativeRunTimeTicks ?? 0) <=
-      msToTicks(EP_MAX_LENGTH_MS)
+    album =>
+      (album.RunTimeTicks ?? album.CumulativeRunTimeTicks ?? 0)
+      > msToTicks(SINGLE_MAX_LENGTH_MS)
+      && (album.RunTimeTicks ?? album.CumulativeRunTimeTicks ?? 0)
+      <= msToTicks(EP_MAX_LENGTH_MS)
   )
 );
 
 const albums = computed(() =>
   discography.value.filter(
-    (album) =>
-      (album?.RunTimeTicks ?? album?.CumulativeRunTimeTicks ?? 0) >
-      msToTicks(EP_MAX_LENGTH_MS)
+    album =>
+      (album.RunTimeTicks ?? album.CumulativeRunTimeTicks ?? 0)
+      > msToTicks(EP_MAX_LENGTH_MS)
   )
 );
 
 route.meta.title = item.value.Name;
-route.meta.backdrop.blurhash = getBlurhash(item.value, ImageType.Backdrop);
+route.meta.layout.backdrop.blurhash = getBlurhash(item.value, ImageType.Backdrop);
 
 /**
  * Set the most appropiate starting tag

@@ -1,9 +1,10 @@
 <template>
   <div ref="imageElement">
     <JImg
-      class="absolute-cover img"
-      once
+      class="absolute-cover"
+      :once
       :src="imageUrl"
+      :alt="props.item.Name ?? $t('unknown')"
       v-bind="$attrs">
       <template #placeholder>
         <BlurhashCanvas
@@ -32,7 +33,7 @@ import {
   ImageType
 } from '@jellyfin/sdk/lib/generated-client';
 import { refDebounced } from '@vueuse/core';
-import { computed, shallowRef } from 'vue';
+import { computed, shallowRef, watch } from 'vue';
 import { vuetify } from '@/plugins/vuetify';
 import { getBlurhash, getImageInfo } from '@/utils/images';
 
@@ -57,6 +58,7 @@ const props = withDefaults(
 );
 
 const imageElement = shallowRef<HTMLDivElement>();
+const once = shallowRef(true);
 const imageUrl = computed(() => {
   const element = imageElement.value;
 
@@ -64,16 +66,16 @@ const imageUrl = computed(() => {
    * We want to track the state of those dependencies
    */
   if (
-    element &&
-    displayWidth.value !== undefined &&
-    displayHeight.value !== undefined
+    element
+    && displayWidth.value !== undefined
+    && displayHeight.value !== undefined
   ) {
     const imageInfo = getImageInfo(props.item, {
       preferThumb: props.type === ImageType.Thumb,
       preferBanner: props.type === ImageType.Banner,
       preferLogo: props.type === ImageType.Logo,
       preferBackdrop: props.type === ImageType.Backdrop,
-      width: element?.clientWidth,
+      width: element.clientWidth,
       ratio: window.devicePixelRatio || 1
     });
 
@@ -82,14 +84,16 @@ const imageUrl = computed(() => {
 });
 
 const hash = computed(() => getBlurhash(props.item, props.type));
+
+/**
+ * Needed so item changes pass properly through all the loading states of JImg,
+ * but window size changes does it only on first load.
+ */
+watch(() => props.item, () => once.value = false);
+watch([displayWidth, displayHeight], () => once.value = true);
 </script>
 
-<style lang="scss" scoped>
-.img {
-  color: transparent;
-  object-fit: cover;
-}
-
+<style scoped>
 .z-1 {
   z-index: -1;
 }

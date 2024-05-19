@@ -14,9 +14,7 @@
       <VCard
         class="ma-2"
         variant="outlined">
-        <VImg
-          :src="imageFormat(item)"
-          :aspect-ratio="getContainerAspectRatioForImageType(item.ImageType)" />
+        <JImg :src="imageFormat(item)" />
         <div class="text-center text-subtitle-1">
           {{ item.ImageType }}
         </div>
@@ -62,9 +60,7 @@
       <VCard
         class="ma-2"
         variant="outlined">
-        <VImg
-          :src="imageFormat(item)"
-          :aspect-ratio="getContainerAspectRatioForImageType(item.ImageType)" />
+        <JImg :src="imageFormat(item)" />
         <div class="text-center text-subtitle-1">
           {{ item.ImageType }}
         </div>
@@ -108,7 +104,6 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { watchImmediate } from '@vueuse/core';
 import {
-  getContainerAspectRatioForImageType,
   getImageInfo
 } from '@/utils/images';
 import { remote } from '@/plugins/remote';
@@ -121,15 +116,15 @@ const { t } = useI18n();
 
 const generalImages = computed<ImageInfo[]>(() =>
   images.value.filter(
-    (image) =>
-      image.ImageType !== ImageType.Screenshot &&
-      image.ImageType !== ImageType.Backdrop &&
-      image.ImageType !== ImageType.Chapter
+    image =>
+      image.ImageType !== ImageType.Screenshot
+      && image.ImageType !== ImageType.Backdrop
+      && image.ImageType !== ImageType.Chapter
   )
 );
 
 const backdropImages = computed<ImageInfo[]>(() =>
-  images.value.filter((image) => image.ImageType === ImageType.Backdrop)
+  images.value.filter(image => image.ImageType === ImageType.Backdrop)
 );
 
 /**

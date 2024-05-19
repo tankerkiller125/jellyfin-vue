@@ -4,7 +4,7 @@
 import axios, {
   type AxiosError
 } from 'axios';
-import auth from '../auth';
+import auth from './auth';
 import { useSnackbar } from '@/composables/use-snackbar';
 import { i18n } from '@/plugins/i18n';
 import { sealed } from '@/utils/validation';
@@ -24,10 +24,10 @@ class RemotePluginAxios {
    */
   public logoutInterceptor = async (error: AxiosError): Promise<void> => {
     if (
-      error.response?.status === 401 &&
-      auth.currentUser &&
-      !error.config?.url?.includes('/Sessions/Logout') &&
-      !error.config?.url?.includes('/Users/Me')
+      error.response?.status === 401
+      && auth.currentUser
+      && !error.config?.url?.includes('/Sessions/Logout')
+      && !error.config?.url?.includes('/Users/Me')
     ) {
       try {
         await auth.refreshCurrentUserInfo();
