@@ -1,5 +1,5 @@
 {
-  "defaultServerURLs": ["https://media.kilgore.family"],
+  "defaultServerURLs": ["https://media.kilgore.family:443"],
   "allowServerSelection": false,
   "routerMode": "hash"
 }
