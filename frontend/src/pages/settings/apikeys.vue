@@ -1,5 +1,8 @@
 <template>
-  <SettingsPage page-title="apiKeys">
+  <SettingsPage>
+    <template #title>
+      {{ t('apiKeys') }}
+    </template>
     <template #actions>
       <VBtn
         color="primary"
@@ -9,7 +12,7 @@
         {{ t('addNewKey') }}
       </VBtn>
       <VBtn
-        v-if="apiKeys.length > 0"
+        v-if="apiKeys.length"
         color="error"
         variant="elevated"
         :loading="loading"

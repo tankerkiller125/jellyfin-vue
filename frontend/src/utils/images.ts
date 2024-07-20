@@ -118,16 +118,14 @@ export function getBlurhash(
   index = 0,
   checkParent = true
 ): string | undefined {
-  if (item) {
-    const tag = getImageTag(item, type, index, checkParent);
+  const tag = getImageTag(item, type, index, checkParent);
 
-    if (
-      tag
-      && !excludedBlurhashTypes.has(type)
-      && item.ImageBlurHashes?.[type]?.[tag]
-    ) {
-      return item.ImageBlurHashes[type]?.[tag];
-    }
+  if (
+    tag
+    && !excludedBlurhashTypes.has(type)
+    && item.ImageBlurHashes?.[type]?.[tag]
+  ) {
+    return item.ImageBlurHashes[type][tag];
   }
 }
 
@@ -273,15 +271,13 @@ export function getImageInfo(
     itemId = item.ParentThumbItemId;
   } else if (
     preferThumb
-    && item.BackdropImageTags
-    && item.BackdropImageTags.length > 0
+    && item.BackdropImageTags?.length
   ) {
     imgType = ImageType.Backdrop;
     imgTag = item.BackdropImageTags[0];
   } else if (
     preferThumb
-    && item.ParentBackdropImageTags
-    && item.ParentBackdropImageTags.length > 0
+    && item.ParentBackdropImageTags?.length
     && inheritThumb
     && item.Type === BaseItemKind.Episode
   ) {
@@ -317,7 +313,7 @@ export function getImageInfo(
   ) {
     imgType = ImageType.Thumb;
     imgTag = item.ImageTags.Thumb;
-  } else if (item.BackdropImageTags && item.BackdropImageTags.length > 0) {
+  } else if (item.BackdropImageTags?.length) {
     imgType = ImageType.Backdrop;
     imgTag = item.BackdropImageTags[0];
   } else if (item.ImageTags?.Thumb) {
@@ -332,8 +328,7 @@ export function getImageInfo(
     imgTag = item.ParentThumbImageTag;
     itemId = item.ParentThumbItemId;
   } else if (
-    item.ParentBackdropImageTags
-    && item.ParentBackdropImageTags.length > 0
+    item.ParentBackdropImageTags?.length
     && inheritThumb
   ) {
     imgType = ImageType.Backdrop;

@@ -9,31 +9,12 @@
   <slot v-else />
 </template>
 
-<script lang="ts">
-import { wrap } from 'comlink';
-import { shallowRef, watch } from 'vue';
-import { DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_PUNCH } from './BlurhashWorker';
-import BlurhashWorker from './BlurhashWorker?worker';
-import { remote } from '@/plugins/remote';
-
-const worker = new BlurhashWorker();
-// eslint-disable-next-line @typescript-eslint/consistent-type-imports
-const pixelWorker = wrap<typeof import('./BlurhashWorker')['default']>(worker);
-
-/**
- * Clear cached blurhashes on logout
- */
-watch(
-  () => remote.auth.currentUser,
-  async (newVal) => {
-    if (newVal === undefined) {
-      await pixelWorker.clearCache();
-    }
-  }, { flush: 'post' }
-);
-</script>
-
 <script setup lang="ts">
+import { transfer } from 'comlink';
+import { shallowRef, watch } from 'vue';
+import { blurhashDecoder, canvasDrawer } from '@/plugins/workers';
+import { BLURHASH_DEFAULT_HEIGHT, BLURHASH_DEFAULT_WIDTH, BLURHASH_DEFAULT_PUNCH } from '@/store';
+
 const props = withDefaults(
   defineProps<{
     hash: string;
@@ -41,37 +22,36 @@ const props = withDefaults(
     height?: number;
     punch?: number;
   }>(),
-  { width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT, punch: DEFAULT_PUNCH }
+  { width: BLURHASH_DEFAULT_WIDTH, height: BLURHASH_DEFAULT_HEIGHT, punch: BLURHASH_DEFAULT_PUNCH }
 );
 
-const pixels = shallowRef<Uint8ClampedArray>();
 const error = shallowRef(false);
 const canvas = shallowRef<HTMLCanvasElement>();
+let offscreen: OffscreenCanvas | undefined;
 
 watch([props, canvas], async () => {
+  const pixels = await blurhashDecoder.getPixels(props.hash, props.width, props.height, props.punch);
+
   if (canvas.value) {
-    const context = canvas.value.getContext('2d');
-    const imageData = context?.createImageData(props.width, props.height);
+    if (!offscreen) {
+      offscreen = canvas.value.transferControlToOffscreen();
+    }
 
     try {
       error.value = false;
-      pixels.value = await pixelWorker.getPixels(
-        props.hash,
-        props.width,
-        props.height,
-        props.punch
-      );
+      await canvasDrawer.drawBlurhash(transfer(
+        { canvas: offscreen,
+          pixels,
+          width: props.width,
+          height: props.height
+        }, [offscreen]));
     } catch {
-      pixels.value = undefined;
       error.value = true;
 
       return;
     }
-
-    if (imageData && context) {
-      imageData.data.set(pixels.value);
-      context.putImageData(imageData, 0, 0);
-    }
+  } else {
+    offscreen = undefined;
   }
 });
 </script>

@@ -9,23 +9,23 @@
           :class="shape"
           class="elevation-2">
           <div
-            class="absolute-cover card-content d-flex justify-center align-center">
-            <RSlot class="card-image">
+            class="d-flex justify-center align-center absolute-cover card-content">
+            <JSlot class="card-image">
               <slot
                 name="image" />
-            </RSlot>
+            </JSlot>
           </div>
           <div
-            class="absolute-cover card-overlay d-flex justify-center align-center"
-            :class="{ 'card-overlay-hover': overlay && isFinePointer }">
-            <div class="card-upper-content d-flex justify-center align-center">
+            class="absolute-cover d-flex justify-center align-center card-overlay"
+            :class="{ 'card-overlay-hover': overlay && hasFinePointer }">
+            <div class="d-flex justify-center align-center card-upper-content">
               <slot name="upper-content" />
             </div>
             <div
-              v-if="(isHovering && overlay && isFinePointer) || forceOverlay"
+              v-if="(isHovering && overlay && hasFinePointer) || forceOverlay"
               class="card-overlay-hover-hidden">
               <slot name="center-content" />
-              <div class="card-lower-content d-flex justify-center align-center">
+              <div class="d-flex justify-center align-center card-lower-content">
                 <slot name="bottom-content" />
               </div>
             </div>
@@ -57,7 +57,7 @@
 <script setup lang="ts">
 import { useAttrs, computed } from 'vue';
 import { isNil } from '@/utils/validation';
-import { isFinePointer } from '@/store';
+import { hasFinePointer } from '@/store';
 import type { CardShapes } from '@/utils/items';
 
 interface Props {

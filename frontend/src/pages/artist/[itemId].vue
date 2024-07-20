@@ -13,7 +13,7 @@
           cols="12"
           sm="7">
           <VRow class="d-flex flex-column">
-            <div class="ml-sm-4 d-flex flex-column">
+            <div class="d-flex flex-column ml-sm-4">
               <div
                 class="text-subtitle-1 text--secondary font-weight-medium text-capitalize">
                 {{ $t('artist') }}
@@ -120,7 +120,9 @@
                       <span
                         v-if="item.Overview"
                         class="item-overview">
-                        <JSafeHtml :html="item.Overview" markdown />
+                        <JSafeHtml
+                          :html="item.Overview"
+                          markdown />
                       </span>
                     </VCol>
                   </VCol>
@@ -144,7 +146,6 @@
 <script setup lang="ts">
 import {
   BaseItemKind,
-  ImageType,
   SortOrder,
   type BaseItemDto
 } from '@jellyfin/sdk/lib/generated-client';
@@ -152,11 +153,12 @@ import { getItemsApi } from '@jellyfin/sdk/lib/utils/api/items-api';
 import { getLibraryApi } from '@jellyfin/sdk/lib/utils/api/library-api';
 import { getUserLibraryApi } from '@jellyfin/sdk/lib/utils/api/user-library-api';
 import { computed, ref } from 'vue';
-import { useRoute } from 'vue-router/auto';
+import { useRoute } from 'vue-router';
 import { msToTicks } from '@/utils/time';
 import { defaultSortOrder as sortBy } from '@/utils/items';
-import { getBlurhash } from '@/utils/images';
 import { useBaseItem } from '@/composables/apis';
+import { useItemBackdrop } from '@/composables/backdrop';
+import { useItemPageTitle } from '@/composables/page-title';
 
 const SINGLE_MAX_LENGTH_MS = 600_000;
 const EP_MAX_LENGTH_MS = 1_800_000;
@@ -221,23 +223,23 @@ const albums = computed(() =>
   )
 );
 
-route.meta.title = item.value.Name;
-route.meta.layout.backdrop.blurhash = getBlurhash(item.value, ImageType.Backdrop);
+useItemPageTitle(item);
+useItemBackdrop(item);
 
 /**
  * Set the most appropiate starting tag
  */
-if (discography.value.length > 0) {
+if (discography.value.length) {
   activeTab.value = 0;
-} else if (albums.value.length > 0) {
+} else if (albums.value.length) {
   activeTab.value = 1;
-} else if (eps.value.length > 0) {
+} else if (eps.value.length) {
   activeTab.value = 2;
-} else if (singles.value.length > 0) {
+} else if (singles.value.length) {
   activeTab.value = 3;
-} else if (appearances.value.length > 0) {
+} else if (appearances.value.length) {
   activeTab.value = 4;
-} else if (musicVideos.value.length > 0) {
+} else if (musicVideos.value.length) {
   activeTab.value = 5;
 } else {
   // Overview

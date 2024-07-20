@@ -3,14 +3,14 @@
     :is="props.group ? TransitionGroup : Transition"
     class="j-transition"
     v-bind="mergeProps($props, $attrs)"
-    :name="prefersNoMotion || props.disabled ? undefined : `j-transition-${props.name}`">
+    :name="prefersNoMotion || disabled || isSlow ? undefined : `j-transition-${props.name}`">
     <slot />
   </component>
 </template>
 
 <script setup lang="ts">
 import { Transition, TransitionGroup, type TransitionProps, mergeProps } from 'vue';
-import { prefersNoMotion } from '@/store';
+import { prefersNoMotion, isSlow } from '@/store';
 
 export interface JTransitionProps extends BetterOmit<TransitionProps, 'name'> {
   name?: 'fade' | 'rotated-zoom' | 'slide-y' | 'slide-y-reverse' | 'slide-x' | 'slide-x-reverse';

@@ -4,11 +4,10 @@ import type {
   RouteLocationNormalized,
   RouteLocationRaw,
   RouteMeta
-} from 'vue-router/auto';
+} from 'vue-router';
 
 const defaultMeta: RouteMeta = {
   layout: {
-    backdrop: {},
     transition: {}
   }
 };

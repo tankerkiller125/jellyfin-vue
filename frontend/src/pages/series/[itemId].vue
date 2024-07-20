@@ -54,7 +54,7 @@
             cols="12"
             md="10">
             <VRow
-              v-if="item && item.GenreItems && item.GenreItems.length > 0"
+              v-if="item && item.GenreItems && item.GenreItems.length"
               align="center">
               <VCol
                 :cols="12"
@@ -82,7 +82,7 @@
               </VCol>
             </VRow>
             <VRow
-              v-if="item && directors.length > 0 && !$vuetify.display.smAndUp"
+              v-if="item && directors.length && !$vuetify.display.smAndUp"
               align="center">
               <VCol
                 :cols="12"
@@ -109,7 +109,7 @@
               </VCol>
             </VRow>
             <VRow
-              v-if="item && writers.length > 0 && !$vuetify.display.smAndUp"
+              v-if="item && writers.length && !$vuetify.display.smAndUp"
               align="center">
               <VCol
                 :cols="12"
@@ -138,14 +138,16 @@
           </VCol>
           <div>
             <p
-              v-if="item.Taglines && item.Taglines.length > 0"
+              v-if="item.Taglines && item.Taglines.length"
               class="text-subtitle-1 text-truncate">
               {{ item.Taglines[0] }}
             </p>
             <p
               v-if="item.Overview"
               class="item-overview">
-              <JSafeHtml :html="item.Overview" markdown />
+              <JSafeHtml
+                :html="item.Overview"
+                markdown />
             </p>
           </div>
         </VCol>
@@ -159,13 +161,13 @@
       </VRow>
     </template>
     <template #right>
-      <div v-if="crew.length > 0">
+      <div v-if="crew.length">
         <h2 class="text-h6 text-sm-h5">
           {{ $t('crew') }}
         </h2>
         <PeopleList :items="crew" />
       </div>
-      <div v-if="actors.length > 0">
+      <div v-if="actors.length">
         <h2 class="text-h6 text-sm-h5">
           {{ $t('cast') }}
         </h2>
@@ -179,17 +181,17 @@
 </template>
 
 <script setup lang="ts">
-import {
-  ImageType,
-  type BaseItemPerson
+import type {
+  BaseItemPerson
 } from '@jellyfin/sdk/lib/generated-client';
 import { getLibraryApi } from '@jellyfin/sdk/lib/utils/api/library-api';
 import { getUserLibraryApi } from '@jellyfin/sdk/lib/utils/api/user-library-api';
 import { computed } from 'vue';
-import { useRoute } from 'vue-router/auto';
+import { useRoute } from 'vue-router';
 import { getItemDetailsLink } from '@/utils/items';
-import { getBlurhash } from '@/utils/images';
 import { useBaseItem } from '@/composables/apis';
+import { useItemBackdrop } from '@/composables/backdrop';
+import { useItemPageTitle } from '@/composables/page-title';
 
 const route = useRoute('/series/[itemId]');
 
@@ -221,6 +223,6 @@ const writers = computed(() =>
   crew.value.filter(person => person.Type === 'Writer')
 );
 
-route.meta.title = item.value.Name;
-route.meta.layout.backdrop.blurhash = getBlurhash(item.value, ImageType.Backdrop);
+useItemPageTitle(item);
+useItemBackdrop(item);
 </script>

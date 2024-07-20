@@ -28,7 +28,7 @@
             class="text-h6 font-weight-heavy"
             :class="{'text-center': !$vuetify.display.mdAndUp }">
             <RouterLink
-              class="link d-block font-weight-medium pa-0 mt-1 text-truncate"
+              class="link pa-0 text-truncate d-block font-weight-medium mt-1"
               :to="getItemDetailsLink(currentSeries)">
               {{ currentSeries.Name }}
             </RouterLink>
@@ -70,12 +70,12 @@
             cols="12"
             md="10">
             <VRow
-              v-if="item && item.GenreItems && item.GenreItems.length > 0"
+              v-if="item && item.GenreItems && item.GenreItems.length"
               align="center">
               <VCol
                 :cols="12"
                 :sm="2"
-                class="px-0 text-truncate">
+                class="text-truncate px-0">
                 <label class="text--secondary">{{ $t('genres') }}</label>
               </VCol>
               <VCol
@@ -98,12 +98,12 @@
               </VCol>
             </VRow>
             <VRow
-              v-if="item && directors.length > 0 && !$vuetify.display.smAndUp"
+              v-if="item && directors.length && !$vuetify.display.smAndUp"
               align="center">
               <VCol
                 :cols="12"
                 :sm="2"
-                class="mt-sm-3 py-sm-0 px-0 text-truncate">
+                class="px-0 text-truncate mt-sm-3 py-sm-0">
                 <label class="text--secondary">{{ $t('directing') }}</label>
               </VCol>
               <VCol
@@ -125,7 +125,7 @@
               </VCol>
             </VRow>
             <VRow
-              v-if="item && writers.length > 0 && !$vuetify.display.smAndUp"
+              v-if="item && writers.length && !$vuetify.display.smAndUp"
               align="center">
               <VCol
                 :cols="12"
@@ -152,7 +152,7 @@
               </VCol>
             </VRow>
             <div
-              v-if="item && item.MediaSources && item.MediaSources.length > 0"
+              v-if="item && item.MediaSources && item.MediaSources.length"
               class="mt-2">
               <VRow
                 v-if="item.MediaSources.length > 1"
@@ -254,15 +254,17 @@
           </VCol>
           <div>
             <p
-              v-if="item.Taglines && item.Taglines.length > 0"
+              v-if="item.Taglines && item.Taglines.length"
               class="text-subtitle-1 text-truncate">
               {{ item.Taglines[0] }}
             </p>
             <p
               v-if="item.Overview"
               class="item-overview">
-              <JSafeHtml :html="item.Overview" markdown />
-          </p>
+              <JSafeHtml
+                :html="item.Overview"
+                markdown />
+            </p>
           </div>
         </VCol>
       </VRow>
@@ -278,13 +280,13 @@
       </VRow>
     </template>
     <template #right>
-      <div v-if="crew.length > 0">
+      <div v-if="crew.length">
         <h2 class="text-h6 text-sm-h5">
           {{ $t('crew') }}
         </h2>
         <PeopleList :items="crew" />
       </div>
-      <div v-if="actors.length > 0">
+      <div v-if="actors.length">
         <h2 class="text-h6 text-sm-h5">
           {{ $t('cast') }}
         </h2>
@@ -295,20 +297,20 @@
 </template>
 
 <script setup lang="ts">
-import {
-  ImageType,
-  type BaseItemPerson,
-  type MediaSourceInfo
+import type {
+  BaseItemPerson,
+  MediaSourceInfo
 } from '@jellyfin/sdk/lib/generated-client';
 import { getItemsApi } from '@jellyfin/sdk/lib/utils/api/items-api';
 import { getLibraryApi } from '@jellyfin/sdk/lib/utils/api/library-api';
 import { getUserLibraryApi } from '@jellyfin/sdk/lib/utils/api/user-library-api';
 import { computed, ref } from 'vue';
-import { useRoute } from 'vue-router/auto';
+import { useRoute } from 'vue-router';
 import { getItemDetailsLink, getMediaStreams } from '@/utils/items';
-import { getBlurhash } from '@/utils/images';
 import { getItemizedSelect } from '@/utils/forms';
 import { useBaseItem } from '@/composables/apis';
+import { useItemBackdrop } from '@/composables/backdrop';
+import { useItemPageTitle } from '@/composables/page-title';
 
 const route = useRoute('/genre/[itemId]');
 
@@ -370,6 +372,6 @@ const currentSource = computed({
   }
 });
 
-route.meta.title = item.value.Name;
-route.meta.layout.backdrop.blurhash = getBlurhash(item.value, ImageType.Backdrop);
+useItemPageTitle(item);
+useItemBackdrop(item);
 </script>

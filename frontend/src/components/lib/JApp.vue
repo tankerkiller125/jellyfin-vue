@@ -1,13 +1,17 @@
 <template>
   <Teleport to="head">
-    <component is="style" data-jellyfin-css-vars>
+    <!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
+    <component
+      is="style"
+      data-jellyfin-css-vars>
       :root {
-        <template v-if="isLoading">
-          cursor: wait;
-        </template>
-        --j-background-color: rgb(var(--v-theme-background));
+      <template v-if="isLoading">
+        cursor: wait;
+      </template>
+      --j-background-color: rgb(var(--v-theme-background));
       }
     </component>
+    <!-- eslint-enable @intlify/vue-i18n/no-raw-text -->
   </Teleport>
   <slot />
 </template>

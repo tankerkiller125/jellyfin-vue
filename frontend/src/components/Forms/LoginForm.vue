@@ -8,8 +8,8 @@
         v-if="!user"
         v-model="login.username"
         variant="outlined"
-        hide-details
         autofocus
+        hide-details
         :label="$t('username')"
         :rules="rules" />
       <VTextField
@@ -24,7 +24,7 @@
       <VCheckbox
         v-model="login.rememberMe"
         hide-details
-        class="mt-6 mb-6"
+        class="mb-6 mt-6"
         color="primary"
         :label="$t('rememberMe')" />
       <VRow
@@ -41,7 +41,7 @@
             {{ $t('changeServer') }}
           </VBtn>
           <VBtn
-            v-else
+            v-else-if="remote.auth.currentServer?.PublicUsers.length"
             block
             size="large"
             variant="elevated"
@@ -72,7 +72,7 @@ import IconEye from 'virtual:icons/mdi/eye';
 import IconEyeOff from 'virtual:icons/mdi/eye-off';
 import { ref, shallowRef } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRouter } from 'vue-router/auto';
+import { useRouter } from 'vue-router';
 import { fetchIndexPage } from '@/utils/items';
 import { remote } from '@/plugins/remote';
 import { getJSONConfig } from '@/utils/external-config';

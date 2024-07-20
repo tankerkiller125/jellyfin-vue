@@ -1,5 +1,8 @@
 <template>
-  <SettingsPage page-title="newUser">
+  <SettingsPage>
+    <template #title>
+      {{ t('newUser') }}
+    </template>
     <template #actions>
       <VBtn
         variant="elevated"
@@ -14,7 +17,7 @@
         width="100%"
         height="100%">
         <VForm
-          class="py-5 px-2"
+          class="px-2 py-5"
           @submit.prevent="createUser">
           <VRow>
             <VCol>
@@ -86,7 +89,7 @@ import { getLibraryApi } from '@jellyfin/sdk/lib/utils/api/library-api';
 import { getUserApi } from '@jellyfin/sdk/lib/utils/api/user-api';
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRouter } from 'vue-router/auto';
+import { useRouter } from 'vue-router';
 import { remote } from '@/plugins/remote';
 
 const { t } = useI18n();
@@ -119,7 +122,7 @@ async function createUser(): Promise<void> {
     await remote.sdk.newUserApi(getUserApi).updateUserPolicy({
       userId: res.Id ?? '',
       userPolicy: {
-        ...res.Policy,
+        ...res.Policy!,
         EnableAllFolders: canAccessAllLibraries.value,
         ...(!canAccessAllLibraries.value && {
           EnabledFolders: accessableLibraries.value

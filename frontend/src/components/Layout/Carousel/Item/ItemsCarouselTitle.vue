@@ -15,7 +15,7 @@
     <RouterLink
       v-else-if="itemLink && titleString"
       data-swiper-parallax="-300"
-      class="link d-block text-h4 text-sm-h3 text-sm-h2 text-truncate"
+      class="link d-block text-h4 text-truncate text-sm-h3 text-sm-h2"
       :to="itemLink">
       {{ titleString }}
     </RouterLink>
@@ -26,7 +26,7 @@
       {{ subtitle }}
     </p>
     <h2
-      v-if="item.Taglines && item.Taglines.length > 0"
+      v-if="item.Taglines && item.Taglines.length"
       data-swiper-parallax="-200"
       class="text-truncate">
       {{ item.Taglines[0] }}

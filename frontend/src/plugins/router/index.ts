@@ -1,11 +1,9 @@
-import { useTitle } from '@vueuse/core';
-import { computed, watch } from 'vue';
+import { watch } from 'vue';
 import {
   createRouter,
   createWebHashHistory,
   createWebHistory
 } from 'vue-router';
-import type { RouteNamedMap, _RouterTyped } from 'unplugin-vue-router/types';
 import { remote } from '../remote';
 import { adminGuard } from './middlewares/admin-pages';
 import { loginGuard } from './middlewares/login';
@@ -26,9 +24,7 @@ export const router = createRouter({
   scrollBehavior(_to, _from, savedPosition) {
     return savedPosition ?? { top: 0 };
   }
-
-  // @ts-expect-error - Wait for upstream fix for https://github.com/posva/unplugin-vue-router/pull/157
-}) as _RouterTyped<RouteNamedMap>;
+});
 
 /**
  * Middleware pipeline: The order IS IMPORTANT (meta handling should always go last)
@@ -66,17 +62,6 @@ router.back = (): ReturnType<typeof router.back> => {
 };
 
 /**
- * Handle page title changes
- */
-const pageTitle = computed(() => {
-  const title = router.currentRoute.value.meta.title?.trim();
-
-  return title ? `${title} | Jellyfin Vue` : 'Jellyfin Vue';
-});
-
-useTitle(pageTitle);
-
-/**
  * Re-run the middleware pipeline when the user logs out or state is cleared
  */
 watch(
@@ -98,13 +83,13 @@ watch(
       await router.replace('/server/add');
     } else if (
       !remote.auth.currentUser
-      && remote.auth.servers.length > 0
+      && remote.auth.servers.length
       && remote.auth.currentServer
     ) {
       await (remote.auth.currentServer.StartupWizardCompleted ? router.replace('/server/login') : router.replace('/wizard'));
     } else if (
       !remote.auth.currentUser
-      && remote.auth.servers.length > 0
+      && remote.auth.servers.length
       && !remote.auth.currentServer
     ) {
       await router.replace('/server/select');
