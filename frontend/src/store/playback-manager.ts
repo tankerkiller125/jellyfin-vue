@@ -22,7 +22,7 @@ import { getPlaystateApi } from '@jellyfin/sdk/lib/utils/api/playstate-api';
 import { getTvShowsApi } from '@jellyfin/sdk/lib/utils/api/tv-shows-api';
 import { useEventListener, watchThrottled } from '@vueuse/core';
 import { v4 } from 'uuid';
-import { toRaw, watch, watchEffect } from 'vue';
+import { watch, watchEffect } from 'vue';
 import { isNil, sealed } from '@/utils/validation';
 import { useBaseItem } from '@/composables/apis';
 import { useSnackbar } from '@/composables/use-snackbar';
@@ -35,7 +35,7 @@ import playbackProfile from '@/utils/playback-profiles';
 import { msToTicks } from '@/utils/time';
 import { mediaControls, mediaElementRef } from '@/store';
 import { CommonStore } from '@/store/super/common-store';
-import { genericWorker } from '@/plugins/workers';
+import { shuffle } from '@/utils/data-manipulation';
 
 /**
  * == INTERFACES AND TYPES ==
@@ -173,7 +173,7 @@ class PlaybackManagerStore extends CommonStore<PlaybackManagerState> {
    * Get reactive BaseItemDto's objects of the queue
    */
   public get queue(): BaseItemDto[] {
-    return apiStore.getItemsById(this._state.queue) as BaseItemDto[] ?? [];
+    return apiStore.getItemsById(this._state.queue) as BaseItemDto[];
   }
 
   /**
@@ -291,7 +291,7 @@ class PlaybackManagerStore extends CommonStore<PlaybackManagerState> {
           srcLang: sub.Language ?? undefined,
           type: sub.DeliveryMethod ?? SubtitleDeliveryMethod.Drop,
           srcIndex: sub.srcIndex,
-          codec: sub.Codec === null ? undefined : sub.Codec
+          codec: sub.Codec === null ? undefined : sub.Codec?.toLowerCase()
         }));
     }
   }
@@ -299,7 +299,7 @@ class PlaybackManagerStore extends CommonStore<PlaybackManagerState> {
   /**
    * Filters the native subtitles
    *
-   * As our profile requires either SSA or VTT, if it's not SSA it'll be VTT.
+   * As our profile requires either SSA, PGS or VTT, if it's not SSA or PGS it'll be VTT.
    * This is done this way as server sends as "Codec" the initial value of the track, so it can be webvtt, subrip, srt...
    * This is easier to filter out the SSA subs
    */
@@ -307,7 +307,7 @@ class PlaybackManagerStore extends CommonStore<PlaybackManagerState> {
     return (
       this.currentItemParsedSubtitleTracks?.filter(
         (sub): sub is PlaybackExternalTrack =>
-          !!sub.codec && sub.codec !== 'ass' && sub.codec !== 'ssa' && !!sub.src
+          !!sub.codec && sub.codec !== 'ass' && sub.codec !== 'ssa' && sub.codec !== 'pgssub' && !!sub.src
       ) ?? []
     );
   }
@@ -318,6 +318,17 @@ class PlaybackManagerStore extends CommonStore<PlaybackManagerState> {
         (sub): sub is PlaybackExternalTrack =>
           !!sub.codec
           && (sub.codec === 'ass' || sub.codec === 'ssa')
+          && !!sub.src
+      ) ?? []
+    );
+  }
+
+  public get currentItemPgsParsedSubtitleTracks(): PlaybackExternalTrack[] {
+    return (
+      this.currentItemParsedSubtitleTracks?.filter(
+        (sub): sub is PlaybackExternalTrack =>
+          !!sub.codec
+          && (sub.codec === 'pgssub')
           && !!sub.src
       ) ?? []
     );
@@ -765,7 +776,7 @@ class PlaybackManagerStore extends CommonStore<PlaybackManagerState> {
         this._state.originalQueue = [];
         this._state.isShuffling = false;
       } else {
-        const queue = await genericWorker.shuffle(toRaw(this._state.queue));
+        const queue = await shuffle(this._state.queue);
 
         this._state.originalQueue = this._state.queue;
 
