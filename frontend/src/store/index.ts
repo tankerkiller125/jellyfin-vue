@@ -10,6 +10,16 @@ import { isNil } from '@/utils/validation';
  * efficient to reuse those, both in components and TS files.
  */
 
+export const DEFAULT_TYPOGRAPHY = 'Figtree Variable';
+/**
+ * Type for the different typography choices across the application
+ *
+ * default: Default application typography.
+ *
+ * system: System typography
+ */
+export type TypographyChoices = 'default' | 'system' | (string & {});
+
 /**
  * == BLURHASH DEFAULTS ==
  * By default, 20x20 pixels with a punch of 1 is returned.
@@ -49,8 +59,12 @@ export const mediaWebAudio = {
 /**
  * Reactively tracks if the user wants animations (false) or not (true).
  */
-export const prefersNoMotion = useMediaQuery('(prefers-reduced-motion)');
+export const prefersNoMotion = useMediaQuery('(prefers-reduced-motion:reduce)');
 
+/**
+ * Reactively tracks if the user wants transparency effects (true) or not (false).
+ */
+export const prefersNoTransparency = useMediaQuery('(prefers-reduced-transparency:reduce)');
 /**
  * IWhether the user is using a pointer with high precision (like a mouse)
  */
