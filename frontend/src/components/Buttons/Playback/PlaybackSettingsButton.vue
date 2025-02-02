@@ -2,9 +2,7 @@
   <VBtn
     icon
     class="align-self-center">
-    <VIcon>
-      <IMdiCog />
-    </VIcon>
+    <JIcon class="i-mdi:cog" />
     <VTooltip
       :text="$t('playbackSettings')"
       location="top" />
@@ -22,8 +20,9 @@
             <VCol :cols="8">
               <VSelect
                 density="comfortable"
-                hide-details
-                disabled />
+
+                disabled
+                hide-details />
             </VCol>
           </VRow>
           <VRow align="center">
@@ -32,11 +31,11 @@
             </VCol>
             <VCol :cols="8">
               <MediaStreamSelector
-                v-if="playbackManager.currentItemAudioTracks"
-                :media-streams="playbackManager.currentItemAudioTracks"
+                v-if="playbackManager.currentItemAudioTracks.value"
+                :media-streams="playbackManager.currentItemAudioTracks.value"
                 type="Audio"
-                :default-stream-index="playbackManager.currentAudioStreamIndex"
-                @input="playbackManager.currentAudioStreamIndex = $event" />
+                :default-stream-index="playbackManager.currentAudioTrack.value?.Index"
+                @input="playbackManager.currentAudioTrack.value = $event ?? -1" />
             </VCol>
           </VRow>
           <VRow
@@ -47,13 +46,13 @@
             </VCol>
             <VCol :cols="8">
               <MediaStreamSelector
-                v-if="playbackManager.currentItemSubtitleTracks"
-                :media-streams="playbackManager.currentItemSubtitleTracks"
+                v-if="playbackManager.currentItemSubtitleTracks.value"
+                :media-streams="playbackManager.currentItemSubtitleTracks.value"
                 type="Subtitle"
                 :default-stream-index="
-                  playbackManager.currentSubtitleStreamIndex
+                  playbackManager.currentSubtitleTrack.value?.Index
                 "
-                @input="playbackManager.currentSubtitleStreamIndex = $event" />
+                @input="playbackManager.currentSubtitleTrack.value = $event ?? -1" />
             </VCol>
           </VRow>
           <VRow align="center">
@@ -80,7 +79,7 @@
               :cols="8"
               class="text-right">
               <VSwitch
-                v-model="playerElement.isStretched.value"
+                v-model="playerElement.state.value.isStretched"
                 color="primary"
                 hide-details />
             </VCol>
@@ -94,9 +93,9 @@
 <script setup lang="ts">
 import { computed, shallowRef } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { playbackManager } from '@/store/playback-manager';
-import { playerElement } from '@/store/player-element';
-import { isObj, isStr, isUndef } from '@/utils/validation';
+import { isObj, isStr, isUndef } from '@jellyfin-vue/shared/validation';
+import { playbackManager } from '#/store/playback-manager';
+import { playerElement } from '#/store/player-element';
 
 const menuModel = defineModel<boolean>();
 const { t } = useI18n();
@@ -111,10 +110,10 @@ type PlaybackSpeedValue = string | typeof playbackItems.value[number] | null;
 const _playbackSpeed = shallowRef<PlaybackSpeedValue>();
 const playbackSpeed = computed({
   get: () => {
-    const playbackSpeedIndex = defaultPlaybackSpeeds.indexOf(playbackManager.playbackSpeed);
+    const playbackSpeedIndex = defaultPlaybackSpeeds.indexOf(playbackManager.playbackSpeed.value);
 
     if (isUndef(_playbackSpeed.value)) {
-      return playbackSpeedIndex === -1 ? String(playbackManager.playbackSpeed) : playbackItems.value[playbackSpeedIndex];
+      return playbackSpeedIndex === -1 ? String(playbackManager.playbackSpeed.value) : playbackItems.value[playbackSpeedIndex];
     } else {
       return _playbackSpeed.value;
     }
@@ -123,7 +122,7 @@ const playbackSpeed = computed({
     _playbackSpeed.value = val;
 
     if (validationRules.every(rule => rule(val) === true)) {
-      playbackManager.playbackSpeed = isObj(val) ? val.speed : Number(val);
+      playbackManager.playbackSpeed.value = isObj(val) ? val.speed : Number(val);
     }
   }
 });
@@ -139,7 +138,7 @@ const validationRules = [
      * Chromium ranges:
      * https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/renderer/core/html/media/html_media_element.cc
      */
-    return num_val >= 0.0625 && num_val <= 16 || t('mustBeInRange', { min: 0.0625, max: 16 });
+    return (num_val >= 0.0625 && num_val <= 16) || t('mustBeInRange', { min: 0.0625, max: 16 });
   }
 ];
 
@@ -148,7 +147,7 @@ const validationRules = [
  */
 function onFocus(e: boolean): void {
   if (!e) {
-    const playbackSpeedIndex = defaultPlaybackSpeeds.indexOf(playbackManager.playbackSpeed);
+    const playbackSpeedIndex = defaultPlaybackSpeeds.indexOf(playbackManager.playbackSpeed.value);
 
     if (playbackSpeedIndex !== -1) {
       _playbackSpeed.value = playbackItems.value[playbackSpeedIndex];

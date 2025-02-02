@@ -6,25 +6,23 @@
  * is displayed instead.
  */
 import { destr } from 'destr';
-import type { ClientSettingsState } from '@/store/client-settings';
-import { isBool } from '@/utils/validation';
-import '@/assets/styles/splashscreen.css';
+import { isBool } from '@jellyfin-vue/shared/validation';
+import type { ClientSettingsState } from '#/store/client-settings';
+import '#/assets/styles/splashscreen.css';
 
 const store = localStorage.getItem('clientSettings') ?? '{}';
 const parsedStore = destr<ClientSettingsState>(store);
-const matchedDarkColorScheme = window.matchMedia(
+const matchedDarkColorScheme = globalThis.matchMedia(
   '(prefers-color-scheme: dark)'
 ).matches;
 const darkColor = '#111827';
 const lightColor = '#f2f2f2';
 let colorToApply: typeof darkColor | typeof lightColor = matchedDarkColorScheme ? darkColor : lightColor;
 
-if ('darkMode' in parsedStore) {
-  const storeDarkMode = parsedStore.darkMode;
+const storeDarkMode = parsedStore.darkMode;
 
-  if (isBool(storeDarkMode)) {
-    colorToApply = parsedStore.darkMode === true ? darkColor : lightColor;
-  }
+if (isBool(storeDarkMode)) {
+  colorToApply = storeDarkMode ? darkColor : lightColor;
 }
 
-document.body.style.setProperty('--j-color-background', colorToApply);
+document.body.style.setProperty('--j-theme-color-background', colorToApply);

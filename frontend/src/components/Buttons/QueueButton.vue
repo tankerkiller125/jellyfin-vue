@@ -2,9 +2,7 @@
   <VBtn
     icon
     class="align-self-center">
-    <VIcon>
-      <IMdiPlaylistPlay />
-    </VIcon>
+    <JIcon class="i-mdi:playlist-play" />
     <VTooltip
       :text="$t('queue')"
       location="top" />
@@ -20,18 +18,18 @@
             <template #prepend>
               <VAvatar>
                 <BlurhashImage
-                  v-if="playbackManager.initiator"
-                  :item="playbackManager.initiator" />
-                <VIcon
+                  v-if="playbackManager.initiator.value"
+                  :item="playbackManager.initiator.value" />
+                <JIcon
                   v-else
-                  :icon="modeIcon" />
+                  :class="modeIcon" />
               </VAvatar>
             </template>
             <template #subtitle>
-              {{ getTotalEndsAtTime(playbackManager.queue) }} -
+              {{ getTotalEndsAtTime(playbackManager.queue.value) }} -
               {{
                 $t('queueItems', {
-                  items: playbackManager.queue.length
+                  items: playbackManager.queueLength.value
                 })
               }}
             </template>
@@ -46,9 +44,7 @@
           <VBtn
             icon
             @click="playbackManager.stop">
-            <VIcon>
-              <IMdiPlaylistRemove />
-            </VIcon>
+            <JIcon class="i-mdi:playlist-remove" />
             <VTooltip
               :text="$t('clearQueue')"
               location="top" />
@@ -56,9 +52,7 @@
           <VBtn
             icon
             disabled>
-            <VIcon>
-              <IMdiContentSave />
-            </VIcon>
+            <JIcon class="i-mdi:content-save" />
             <VTooltip
               :text="$t('saveAsPlaylist')"
               location="top" />
@@ -71,12 +65,10 @@
 </template>
 
 <script setup lang="ts">
-import IMdiPlaylistMusic from 'virtual:icons/mdi/playlist-music';
-import IMdiShuffle from 'virtual:icons/mdi/shuffle';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { getTotalEndsAtTime } from '@/utils/time';
-import { InitMode, playbackManager } from '@/store/playback-manager';
+import { getTotalEndsAtTime } from '#/utils/time';
+import { InitMode, playbackManager } from '#/store/playback-manager';
 
 const { size = 40, closeOnClick = false } = defineProps<{
   size?: number;
@@ -95,40 +87,36 @@ const sourceText = computed(() => {
    * https://github.com/jellyfin/jellyfin-vue/pull/609
    */
   const unknownSource = t('unknown');
+  const isFromAlbum = playbackManager.currentItem.value?.AlbumId
+    === playbackManager.initiator.value?.Id;
+  const substitution = {
+    item: playbackManager.initiator.value?.Name
+  };
 
-  switch (playbackManager.playbackInitMode) {
+  switch (playbackManager.playbackInitMode.value) {
     case InitMode.Unknown: {
       return unknownSource;
     }
     case InitMode.Item: {
-      return playbackManager.currentItem?.AlbumId
-        === playbackManager.initiator?.Id
-        ? t('playingFrom', {
-          item: playbackManager.initiator?.Name
-        })
+      return isFromAlbum
+        ? t('playingFrom', substitution)
         : unknownSource;
     }
     case InitMode.Shuffle: {
       return t('playinginShuffle');
     }
     case InitMode.ShuffleItem: {
-      return playbackManager.currentItem?.AlbumId
-        === playbackManager.initiator?.Id
-        ? t('playingItemInShuffle', {
-          item: playbackManager.initiator?.Name
-        })
+      return isFromAlbum
+        ? t('playingItemInShuffle', substitution)
         : unknownSource;
-    }
-    default: {
-      return '';
     }
   }
 });
 
 const modeIcon = computed(() =>
-  playbackManager.playbackInitMode === InitMode.Shuffle
-    ? IMdiShuffle
-    : IMdiPlaylistMusic
+  playbackManager.playbackInitMode.value === InitMode.Shuffle
+    ? 'i-mdi:shuffle'
+    : 'i-mdi:playlist-music'
 );
 </script>
 

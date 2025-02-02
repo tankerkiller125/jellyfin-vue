@@ -4,7 +4,7 @@
       :to="videoContainerRef"
       :disabled="!videoContainerRef"
       defer>
-      <div class="uno-my-auto">
+      <div class="uno-relative">
         <Component
           :is="mediaElementType"
           v-show="mediaElementType === 'video' && videoContainerRef"
@@ -13,19 +13,22 @@
           autoplay
           crossorigin
           playsinline
-          :loop="playbackManager.isRepeatingOnce"
-          :class="{ 'uno-object-fill': playerElement.isStretched.value, 'uno-max-h-100vh': true}"
+          :loop="playbackManager.isRepeatingOnce.value"
+          class="uno-h-full uno-max-h-100vh"
+          :class="{
+            'uno-object-fill uno-w-screen': playerElement.state.value.isStretched,
+          }"
           @loadeddata="onLoadedData">
           <track
-            v-for="sub in playbackManager.currentItemVttParsedSubtitleTracks"
-            :key="`${playbackManager.currentSourceUrl}-${sub.srcIndex}`"
+            v-for="sub in playerElement.currentItemVttParsedSubtitleTracks.value"
+            :key="`${playbackManager.currentSourceUrl.value}-${sub.srcIndex}`"
             kind="subtitles"
             :label="sub.label"
             :srclang="sub.srcLang"
             :src="sub.src">
         </Component>
         <SubtitleTrack
-          v-if="subtitleSettings.state.enabled && playerElement.currentExternalSubtitleTrack?.parsed !== undefined" />
+          v-if="subtitleSettings.state.value.enabled && playerElement.currentExternalSubtitleTrack.value?.parsed" />
       </div>
     </Teleport>
   </template>
@@ -36,16 +39,16 @@ import Hls, { ErrorTypes, Events, type ErrorData } from 'hls.js';
 import HlsWorkerUrl from 'hls.js/dist/hls.worker.js?url';
 import { computed, nextTick, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useSnackbar } from '@/composables/use-snackbar';
+import { isNil } from '@jellyfin-vue/shared/validation';
+import { useSnackbar } from '#/composables/use-snackbar';
 import {
   mediaElementRef,
   mediaWebAudio
-} from '@/store';
-import { playbackManager } from '@/store/playback-manager';
-import { playerElement, videoContainerRef } from '@/store/player-element';
-import { getImageInfo } from '@/utils/images';
-import { isNil } from '@/utils/validation';
-import { subtitleSettings } from '@/store/client-settings/subtitle-settings';
+} from '#/store';
+import { playbackManager } from '#/store/playback-manager';
+import { playerElement, videoContainerRef } from '#/store/player-element';
+import { getImageInfo } from '#/utils/images';
+import { subtitleSettings } from '#/store/client-settings/subtitle-settings';
 
 const { t } = useI18n();
 let busyWebAudio = false;
@@ -57,17 +60,17 @@ const hls = Hls.isSupported()
   : undefined;
 
 const mediaElementType = computed<'audio' | 'video' | undefined>(() => {
-  if (playbackManager.isAudio) {
+  if (playbackManager.isAudio.value) {
     return 'audio';
-  } else if (playbackManager.isVideo) {
+  } else if (playbackManager.isVideo.value) {
     return 'video';
   }
 });
 
 const posterUrl = computed(() =>
-  !isNil(playbackManager.currentItem)
-  && playbackManager.isVideo
-    ? getImageInfo(playbackManager.currentItem, {
+  !isNil(playbackManager.currentItem.value)
+  && playbackManager.isVideo.value
+    ? getImageInfo(playbackManager.currentItem.value, {
       preferBackdrop: true
     }).url
     : undefined
@@ -95,7 +98,7 @@ async function detachWebAudio(): Promise<void> {
         mediaWebAudio.gainNode.gain.setValueAtTime(mediaWebAudio.gainNode.gain.value, mediaWebAudio.context.currentTime);
         mediaWebAudio.gainNode.gain.exponentialRampToValueAtTime(0.0001, mediaWebAudio.context.currentTime + 1.5);
         await nextTick();
-        await new Promise(resolve => window.setTimeout(resolve));
+        await new Promise(resolve => globalThis.setTimeout(resolve));
         mediaWebAudio.gainNode.disconnect();
         mediaWebAudio.gainNode = undefined;
       }
@@ -142,12 +145,12 @@ async function attachWebAudio(el: HTMLMediaElement): Promise<void> {
  * Called by the media element when the playback is ready
  */
 async function onLoadedData(): Promise<void> {
-  if (playbackManager.isVideo) {
+  if (playbackManager.isVideo.value) {
     if (mediaElementRef.value) {
       /**
        * Makes the resume start from the correct time
        */
-      mediaElementRef.value.currentTime = playbackManager.currentTime;
+      mediaElementRef.value.currentTime = playbackManager.currentTime.value;
     }
 
     await playerElement.applyCurrentSubtitle();
@@ -199,17 +202,21 @@ watch(mediaElementRef, async () => {
   }
 });
 
-watch(
-  () => playbackManager.currentSourceUrl,
-  (newUrl) => {
+watch(playbackManager.currentSourceUrl,
+  async (newUrl) => {
     if (hls) {
       hls.stopLoad();
     }
 
+    /**
+     * Ensure element is mounted before setting the source.
+     */
+    await nextTick();
+
     if (
       mediaElementRef.value
       && (!newUrl
-        || playbackManager.currentMediaSource?.SupportsDirectPlay
+        || playbackManager.currentMediaSource.value?.SupportsDirectPlay
         || !hls)
     ) {
       /**
@@ -221,7 +228,7 @@ watch(
       mediaElementRef.value.src = String(newUrl);
     } else if (
       hls
-      && playbackManager.isVideo
+      && playbackManager.isVideo.value
       && newUrl
     ) {
       /**

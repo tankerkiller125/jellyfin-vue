@@ -10,10 +10,11 @@
         :class="useResponsiveClasses('card-grid-container')">
         <ItemCard
           :item="item"
-          text
+
+          link
           margin
-          overlay
-          link />
+          text
+          overlay />
       </JVirtual>
       <div
         v-else
@@ -57,7 +58,7 @@
 
 <script setup lang="ts">
 import type { BaseItemDto } from '@jellyfin/sdk/lib/generated-client';
-import { useResponsiveClasses } from '@/composables/use-responsive-classes';
+import { useResponsiveClasses } from '#/composables/use-responsive-classes';
 
 const { items, large, noVirtual } = defineProps<{
   items: BaseItemDto[];

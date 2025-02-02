@@ -1,0 +1,41 @@
+{
+  "name": "@jellyfin-vue/configs",
+  "type": "module",
+  "description": "Configuration files for Jellyfin Vue packages",
+  "exports": {
+    "./typescript": "./src/typescript.json",
+    "./lint": "./src/lint/index.ts",
+    "./uno": "./src/uno.ts",
+    "./storybook": "./src/storybook.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "lint:inspect": "eslint-config-inspector",
+    "check:types": "vue-tsc"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.19.0",
+    "@intlify/eslint-plugin-vue-i18n": "3.2.0",
+    "@stylistic/eslint-plugin": "3.0.1",
+    "@unocss/eslint-config": "65.4.3",
+    "eslint-config-flat-gitignore": "2.0.0",
+    "eslint-plugin-css": "0.11.0",
+    "eslint-plugin-depend": "0.12.0",
+    "eslint-plugin-file-progress": "3.0.1",
+    "eslint-plugin-import-x": "4.6.1",
+    "eslint-plugin-jsdoc": "50.6.3",
+    "eslint-plugin-jsonc": "2.19.1",
+    "eslint-plugin-promise": "7.2.1",
+    "eslint-plugin-regexp": "2.7.0",
+    "eslint-plugin-sonarjs": "3.0.1",
+    "eslint-plugin-unicorn": "56.0.1",
+    "eslint-plugin-vue": "9.32.0",
+    "eslint-plugin-vue-scoped-css": "2.9.0",
+    "find-up-simple": "1.0.0",
+    "globals": "15.14.0",
+    "typescript-eslint": "8.22.0",
+    "unocss": "65.4.3",
+    "vue-eslint-parser": "9.4.3"
+  }
+}

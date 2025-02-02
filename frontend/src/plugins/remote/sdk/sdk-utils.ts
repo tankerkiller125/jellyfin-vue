@@ -10,20 +10,20 @@ import {
   isMobile,
   isTizen,
   isWebOS
-} from '@/utils/browser-detection';
-import { version } from '@/../package.json';
+} from '#/utils/browser-detection';
+import { version } from '#/../package.json';
 
 /**
  * Returns the device ID, creating it in case it does not exist
  */
 function ensureDeviceId(): string {
   const storageKey = 'deviceId';
-  const val = window.localStorage.getItem(storageKey);
+  const val = globalThis.localStorage.getItem(storageKey);
 
   if (!val) {
     const id = v4();
 
-    window.localStorage.setItem(storageKey, id);
+    globalThis.localStorage.setItem(storageKey, id);
 
     return id;
   }

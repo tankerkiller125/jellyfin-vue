@@ -2,16 +2,19 @@
   <VTextField
     v-model="searchQuery"
     class="search-input"
-    :prepend-inner-icon="IMdiMagnify"
     :placeholder="$t('search')"
     density="compact"
     hide-details
     single-line
-    @update:focused="onFocus" />
+    @update:focused="onFocus">
+    <template #prepend-inner>
+      <JIcon
+        class="i-mdi:magnify" />
+    </template>
+  </VTextField>
 </template>
 
 <script setup lang="ts">
-import IMdiMagnify from 'virtual:icons/mdi/magnify';
 import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
@@ -24,7 +27,7 @@ const searchQuery = computed({
   },
   set(value) {
     void router.replace({
-      ...router.currentRoute,
+      ...router.currentRoute.value,
       query: {
         q: value.trim() || undefined
       }
@@ -36,7 +39,7 @@ const searchQuery = computed({
  * Handle page redirects depending on the focus state of the component
  */
 async function onFocus(focused: boolean): Promise<void> {
-  if (!searchQuery.value && !focused && window.history.length) {
+  if (!searchQuery.value && !focused && globalThis.history.length) {
     router.back();
   } else if (focused && !searchQuery.value) {
     await router.push({ path: '/search' });

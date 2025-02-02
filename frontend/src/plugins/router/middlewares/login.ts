@@ -1,62 +1,79 @@
 import type {
-  RouteLocationNormalized,
-  RouteLocationPathRaw,
-  RouteLocationRaw
+  NavigationGuardReturn,
+  RouteLocationNormalized
 } from 'vue-router';
+import type { RouteNamedMap } from 'vue-router/auto-routes';
 import { until } from '@vueuse/core';
-import { remote } from '@/plugins/remote';
-import { isNil } from '@/utils/validation';
-import { getJSONConfig } from '@/utils/external-config';
+import { isNil } from '@jellyfin-vue/shared/validation';
+import { remote } from '#/plugins/remote';
+import { jsonConfig } from '#/utils/external-config';
+import { useSnackbar } from '#/composables/use-snackbar';
+import { i18n } from '#/plugins/i18n';
 
 const serverAddUrl = '/server/add';
 const serverSelectUrl = '/server/select';
 const serverLoginUrl = '/server/login';
-const serverRoutes = new Set([serverAddUrl, serverSelectUrl]);
-const routes = new Set([...serverRoutes, serverLoginUrl]);
+const serverWizard = '/wizard';
+const serverPages = new Set<keyof RouteNamedMap>([serverAddUrl, serverSelectUrl, serverLoginUrl, serverWizard]);
 
 /**
- * Performs the login guard redirection ensuring no redirection loops happen
+ * Gets the best server page based on the current state.
+ * Note that the final page rendered might differ from the best one here
+ * in the loginGuard
  */
-function doRedir(dest: RouteLocationPathRaw, to: RouteLocationNormalized) {
-  return to.path === dest.path
-    ? true
-    : dest;
+async function _getBestServerPage(): Promise<Nullish<keyof RouteNamedMap>> {
+  if (jsonConfig.defaultServerURLs.length && isNil(remote.auth.currentServer.value)) {
+    await until(remote.auth.currentServer).toBeTruthy({ flush: 'pre' });
+  }
+
+  if (!remote.auth.addedServers.value) {
+    return serverAddUrl;
+  } else if (isNil(remote.auth.currentServer.value)) {
+    return serverSelectUrl;
+  } else if (!remote.auth.currentServer.value.StartupWizardCompleted) {
+    return serverWizard;
+  }
 }
 
-/**
- * Redirects to login page if there's no user logged in.
- */
-export async function loginGuard(
-  to: RouteLocationNormalized
-): Promise<boolean | RouteLocationRaw> {
-  const jsonConfig = await getJSONConfig();
+export const loginGuard = async (
+  to: RouteLocationNormalized,
+  from: RouteLocationNormalized
+): Promise<Exclude<NavigationGuardReturn, Error>> => {
+  const toServerPages = serverPages.has(to.name);
 
-  if (jsonConfig.defaultServerURLs.length && isNil(remote.auth.currentServer)) {
-    await until(() => remote.auth.currentServer).toBeTruthy({ flush: 'pre' });
+  /**
+   * Do not allow the server selection pages if `allowServerSelection` is false in config.json,
+   * but do allow the login page.
+   */
+  if (!jsonConfig.allowServerSelection && (toServerPages && to.name !== serverLoginUrl)) {
+    return false;
   }
 
-  if (
-    (
-      !jsonConfig.allowServerSelection
-      && serverRoutes.has(to.path)
-    )
-    || (
-      !isNil(remote.auth.currentServer)
-      && !isNil(remote.auth.currentUser)
-      && !isNil(remote.auth.currentUserToken)
-      && routes.has(to.path)
-    )
-  ) {
-    return doRedir({ path: '/', replace: true }, to);
-  }
+  const fromServerPages = serverPages.has(from.name);
+  const res = await _getBestServerPage();
 
-  if (!remote.auth.servers.length) {
-    return doRedir({ path: serverAddUrl, replace: true }, to);
-  } else if (isNil(remote.auth.currentServer)) {
-    return doRedir({ path: serverSelectUrl, replace: true }, to);
-  } else if (isNil(remote.auth.currentUser)) {
-    return doRedir({ path: serverLoginUrl, replace: true }, to);
-  }
+  const loggedIn = !isNil(remote.auth.currentUser.value);
+  const shouldBlockToServer = loggedIn && toServerPages;
+  const shouldBlockToApp = !loggedIn && !toServerPages;
+  const shouldBlock = shouldBlockToServer || shouldBlockToApp;
+  const shouldRedirectToHome = loggedIn && fromServerPages;
+  /**
+   * Redirections between server and app pages are freely allowed
+   */
+  const shouldRedirect = !isNil(res) || shouldBlockToApp || shouldRedirectToHome;
 
-  return true;
-}
+  if (shouldRedirect) {
+    const name = loggedIn ? '/' : res ?? serverLoginUrl;
+
+    if (to.name !== name) {
+      return {
+        name,
+        replace: true
+      };
+    }
+  } else if (shouldBlock) {
+    useSnackbar(i18n.t('unauthorized'), 'error');
+
+    return false;
+  }
+};

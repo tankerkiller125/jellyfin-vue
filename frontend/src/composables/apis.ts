@@ -2,26 +2,26 @@ import type { Api } from '@jellyfin/sdk';
 import type { BaseItemDto, BaseItemDtoQueryResult } from '@jellyfin/sdk/lib/generated-client';
 import type { AxiosResponse } from 'axios';
 import { deepEqual } from 'fast-equals';
-import { computed, effectScope, getCurrentScope, isRef, shallowRef, toValue, unref, watch, type ComputedRef, type Ref } from 'vue';
-import { until } from '@vueuse/core';
-import { useLoading } from '@/composables/use-loading';
-import { useSnackbar } from '@/composables/use-snackbar';
-import { i18n } from '@/plugins/i18n';
-import { remote } from '@/plugins/remote';
-import { isConnectedToServer } from '@/store';
-import { apiStore } from '@/store/api';
-import { isArray, isNil } from '@/utils/validation';
-import { router } from '@/plugins/router';
+import { computed, effectScope, getCurrentScope, inject, isRef, shallowRef, toValue, unref, watch, type ComputedRef, type Ref } from 'vue';
+import { until, whenever } from '@vueuse/core';
+import type { Exact, Writable } from 'type-fest';
+import { isArray, isNil } from '@jellyfin-vue/shared/validation';
+import { useLoading } from '#/composables/use-loading';
+import { useSnackbar } from '#/composables/use-snackbar';
+import { i18n } from '#/plugins/i18n';
+import { remote } from '#/plugins/remote';
+import { isConnectedToServer } from '#/store';
+import { apiStore } from '#/store/api';
+import { JView_isRouting } from '#/store/keys';
 
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 type OmittedKeys = 'fields' | 'userId' | 'enableImages' | 'enableTotalRecordCount' | 'enableImageTypes';
 type ParametersAsGetters<T extends (...args: any[]) => any> = T extends (...args: infer P) => any
-  ? { [K in keyof P]: () => BetterOmit<Mutable<P[K]>, OmittedKeys> }
+  ? { [K in keyof P]: () => BetterOmit<Writable<P[K]>, OmittedKeys> }
   : never;
 type ExtractResponseDataType<T> = Awaited<T> extends AxiosResponse<infer U> ? U : undefined;
-type Validate<T, U> = T extends U ? U : never;
 type ComposableParams<T extends Record<K, (...args: any[]) => any>, K extends keyof T, U extends ParametersAsGetters<T[K]>> =
-  Validate<ParametersAsGetters<T[K]>, U>;
+  Exact<ParametersAsGetters<T[K]>, U>;
 /**
  * If the response contains an Items (usually the *QueryResult ones) property, we return the value of Items instead of the whole response,
  * so we return the appropiate type for it. We also remove null and undefined since we already check for that
@@ -126,7 +126,7 @@ async function resolveAndAdd<T extends Record<K, (...args: any[]) => any>, K ext
   loading: Ref<boolean | undefined> | undefined,
   stringifiedArgs: string,
   ops: Required<ComposableOps>,
-  ...args: Parameters<T[K]>): Promise<ExtractItems<Awaited<ReturnType<T[K]>['data']>> | void> {
+  ...args: Parameters<T[K]>): Promise<ExtractItems<Awaited<ReturnType<T[K]>['data']>> | undefined> {
   /**
    * We add all BaseItemDto's fields for consistency in what we can expect from the store.
    * toValue normalizes the getters.
@@ -134,7 +134,7 @@ async function resolveAndAdd<T extends Record<K, (...args: any[]) => any>, K ext
   const extendedParams = [
     {
       ...args[0],
-      ...(remote.auth.currentUserId && { userId: remote.auth.currentUserId }),
+      ...(remote.auth.currentUserId.value && { userId: remote.auth.currentUserId.value }),
       fields: apiStore.apiEnums.fields,
       enableUserData: true,
       enableImageTypes: apiStore.apiEnums.images,
@@ -183,7 +183,7 @@ function _sharedInternalLogic<T extends Record<K, (...args: any[]) => any>, K ex
   ops: Required<ComposableOps>
 ): (this: any, ...args: ComposableParams<T, K, U>) => Promise<ReturnPayload<T, K, typeof ofBaseItem>> | ReturnPayload<T, K, typeof ofBaseItem> {
   const offlineParams: OfflineParams<T, K>[] = [];
-  const isFuncDefined = (): boolean => unref(api) !== undefined && unref(methodName) !== undefined;
+  const isFuncDefined = (): boolean => !isNil(unref(api)) && !isNil(unref(methodName));
 
   const loading = shallowRef<boolean | undefined>(false);
   const argsRef = shallowRef<Parameters<T[K]>>();
@@ -205,7 +205,7 @@ function _sharedInternalLogic<T extends Record<K, (...args: any[]) => any>, K ex
 
     return currentCachedRequest;
   });
-  const isCached = computed(() => Boolean(cachedData.value));
+  const isCached = computed(() => !!cachedData.value);
   const data = computed<ReturnData<T, K, typeof ofBaseItem>>(() => {
     if (ops.skipCache.request && result.value) {
       if (ofBaseItem) {
@@ -276,7 +276,7 @@ function _sharedInternalLogic<T extends Record<K, (...args: any[]) => any>, K ex
 
     argsRef.value = normalizeArgs();
 
-    if (getCurrentScope() !== undefined) {
+    if (!isNil(getCurrentScope())) {
       const handleArgsChange = async (_: typeof args, old: typeof args | undefined): Promise<void> => {
         const normalizedArgs = normalizeArgs();
 
@@ -306,9 +306,17 @@ function _sharedInternalLogic<T extends Record<K, (...args: any[]) => any>, K ex
         }
       });
 
-      watch(() => router.currentRoute.value.name, () => scope.stop(),
-        { once: true, flush: 'sync' }
-      );
+      /**
+       * If we're routing, the effects of this composable are no longer useful, so we stop them
+       * to avoid accidental data fetching (e.g due to route param changes)
+       */
+      const isRouting = inject(JView_isRouting);
+
+      if (!isNil(isRouting)) {
+        whenever(isRouting, () => scope.stop(),
+          { once: true, flush: 'sync' }
+        );
+      }
     }
 
     /**
@@ -462,4 +470,4 @@ export function methodsAsObject<T extends Record<K, (...args: any[]) => any>, K 
   };
 }
 
-/* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return */
+/* eslint-enable @typescript-eslint/no-explicit-any */

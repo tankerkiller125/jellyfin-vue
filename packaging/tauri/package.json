@@ -1,17 +1,17 @@
 {
-  "name": "@jellyfin-vue/tauri",
+  "name": "@jellyfin-vue/tauri-packaging",
   "private": true,
-  "version": "0.0.0",
   "scripts": {
     "start": "npm run gen-icon && tauri dev",
     "gen-icon": "tauri icon ../../frontend/public/icon.svg",
     "build": "npm run gen-icon && tauri build",
     "clean": "git clean -fxd"
   },
-  "dependencies": {
-    "@jellyfin-vue/frontend": "*"
-  },
   "devDependencies": {
-    "@tauri-apps/cli": "2.0.0-rc.3"
+    "@tauri-apps/cli": "2.2.7",
+    "vite": "6.0.11"
+  },
+  "dependencies": {
+    "@jellyfin-vue/tauri-runtime": "*"
   }
 }

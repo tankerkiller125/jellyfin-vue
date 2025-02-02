@@ -6,17 +6,18 @@ import { ImageType, ItemFields, type BaseItemDto } from '@jellyfin/sdk/lib/gener
 import { getItemsApi } from '@jellyfin/sdk/lib/utils/api/items-api';
 import { getLibraryApi } from '@jellyfin/sdk/lib/utils/api/library-api';
 import { reactive, watch } from 'vue';
-import { isArray, isObj, isStr, sealed } from '@/utils/validation';
-import { remote } from '@/plugins/remote';
+import type { LiteralUnion, Arrayable } from 'type-fest';
+import { isArray, isObj, isStr, sealed } from '@jellyfin-vue/shared/validation';
+import { remote } from '#/plugins/remote';
 
 /**
  * Class that we can use to transform to BaseItem when necessary
  */
 @sealed
 class CachedResponse {
-  public wasArray: boolean | undefined;
+  public wasArray = false;
   public ids: BaseItemDto['Id'][] = [];
-  public rawResult: unknown | undefined;
+  public rawResult: LiteralUnion<unknown, undefined>;
   public ofBaseItem: boolean;
 
   public constructor(ofBaseItem: boolean, payload: boolean extends typeof ofBaseItem ? BaseItemDto | BaseItemDto[] : unknown) {
@@ -39,10 +40,6 @@ class ApiStore {
   /**
    * == STATE SECTION ==
    */
-  /**
-   * Maps can be cleared (see this._clear), so no need to perform an structuredClone
-   * of the defaultState here
-   */
   private readonly _items = reactive(new Map<BaseItemDto['Id'], BaseItemDto>());
   private readonly _requests = reactive(new Map<string, Map<string, CachedResponse>>());
   public readonly apiEnums = Object.freeze({
@@ -62,7 +59,7 @@ class ApiStore {
   public readonly getCachedRequest = (funcName: string, params: string): CachedResponse | undefined =>
     this._requests.get(funcName)?.get(params);
 
-  public readonly getRequest = (cache?: CachedResponse): BaseItemDto | BaseItemDto[] | unknown => {
+  public readonly getRequest = (cache?: CachedResponse) => {
     if (cache) {
       if (cache.ofBaseItem) {
         const array = cache.ids.map(r => this.getItemById(r));
@@ -97,11 +94,11 @@ class ApiStore {
     }
   };
 
-  public readonly requestAdd = <T, U extends BaseItemDto | BaseItemDto[]>(
+  public readonly requestAdd = <U extends Arrayable<BaseItemDto>>(
     funcName: string,
     params: string,
     ofBaseItem: boolean,
-    result: U): typeof ofBaseItem extends true ? U : T => {
+    result: U): typeof ofBaseItem extends true ? U : unknown => {
     const toSave = new CachedResponse(ofBaseItem, result);
 
     if (this._requests.has(funcName)) {
@@ -110,7 +107,7 @@ class ApiStore {
       this._requests.set(funcName, new Map([[params, toSave]]));
     }
 
-    return this.getRequest(this.getCachedRequest(funcName, params)) as T;
+    return this.getRequest(this.getCachedRequest(funcName, params));
   };
 
   public readonly itemDelete = async (itemId: string): Promise<void> => {
@@ -140,7 +137,7 @@ class ApiStore {
   private readonly _update = async (itemIds: BaseItemDto['Id'][]): Promise<void> => {
     if (itemIds.length) {
       const { data } = await remote.sdk.newUserApi(getItemsApi).getItems({
-        userId: remote.auth.currentUserId,
+        userId: remote.auth.currentUserId.value,
         ids: itemIds as string[],
         fields: this.apiEnums.fields as ItemFields[],
         enableImageTypes: this.apiEnums.images as ImageType[],
@@ -213,18 +210,7 @@ class ApiStore {
       }
     );
 
-    watch(
-      () => remote.auth.currentUser,
-      () => {
-        window.requestAnimationFrame(() => {
-          window.setTimeout(() => {
-            if (!remote.auth.currentUser) {
-              this._clear();
-            }
-          });
-        });
-      }, { flush: 'post' }
-    );
+    remote.auth.onAfterLogout(this._clear);
   }
 }
 

@@ -15,8 +15,13 @@
         :key="item.to"
         :to="item.to"
         exact
-        :prepend-icon="item.icon"
-        :title="item.title" />
+        :title="item.title">
+        <template #prepend>
+          <JIcon
+            class="uno-min-w-10"
+            :class="item.icon" />
+        </template>
+      </VListItem>
       <VListSubheader>{{ $t('libraries') }}</VListSubheader>
       <template v-for="library in drawerItems">
         <VListItem
@@ -24,8 +29,13 @@
           :key="library.to"
           :to="library.to"
           exact
-          :prepend-icon="library.icon"
-          :title="library.title" />
+          :title="library.title">
+          <template #prepend>
+            <JIcon
+              class="uno-min-w-10"
+              :class="library.icon" />
+          </template>
+        </VListItem>
       </template>
     </VList>
     <template #append>
@@ -37,13 +47,12 @@
 </template>
 
 <script setup lang="ts">
-import IMdiHome from 'virtual:icons/mdi/home';
 import { computed, inject, type Ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRoute } from 'vue-router';
 import type { RouteNamedMap } from 'vue-router/auto-routes';
-import type { getLibraryIcon } from '@/utils/items';
-import { prefersNoTransparency } from '@/store';
+import type { getLibraryIcon } from '#/utils/items';
+import { transparencyEffects } from '#/store';
+import { JView_isRouting } from '#/store/keys';
 
 export interface DrawerItem {
   icon: ReturnType<typeof getLibraryIcon>;
@@ -56,15 +65,15 @@ const { order, drawerItems } = defineProps<{
   drawerItems: DrawerItem[];
 }>();
 
-const route = useRoute();
 const { t } = useI18n();
 
 const drawer = inject<Ref<boolean>>('NavigationDrawer');
-const transparentLayout = computed(() => !prefersNoTransparency.value && route.meta.layout.transparent);
+const isRouting = inject(JView_isRouting);
+const transparentLayout = computed(previous => isRouting?.value ? previous : transparencyEffects.value);
 
 const items = [
   {
-    icon: IMdiHome,
+    icon: 'i-mdi:home',
     title: t('home'),
     to: '/'
   }

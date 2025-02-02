@@ -1,7 +1,7 @@
 <template>
   <VDialog
     max-width="30%"
-    :model-value="person !== undefined"
+    :model-value="!isNil(person)"
     @update:model-value="emit('close')">
     <VCard>
       <VCardTitle>{{ t('editPerson') }}</VCardTitle>
@@ -14,14 +14,12 @@
               class="ml-2">
               <JImg
                 :src="
-                  person?.Id && $remote.sdk.api?.getItemImageUrl(person.Id, ImageType.Primary)
+                  person?.Id && getItemImageUrl(person.Id, ImageType.Primary)
                 "
                 :alt="$t('person')">
                 <template #placeholder>
-                  <VIcon
-                    class="bg-grey-darken-3">
-                    <IMdiAccount />
-                  </VIcon>
+                  <JIcon
+                    class="bg-grey-darken-3 i-mdi:account" />
                 </template>
               </JImg>
             </VAvatar>
@@ -82,6 +80,8 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { type BaseItemPerson, ImageType } from '@jellyfin/sdk/lib/generated-client';
 import { watchImmediate } from '@vueuse/core';
+import { isNil } from '@jellyfin-vue/shared/validation';
+import { getItemImageUrl } from '#/utils/images';
 
 const { person } = defineProps<{ person: BaseItemPerson | undefined }>();
 

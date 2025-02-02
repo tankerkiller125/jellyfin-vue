@@ -1,0 +1,19 @@
+{
+  "name": "@jellyfin-vue/vite-plugins",
+  "description": "Vite plugins for Jellyfin Vue packages",
+  "type": "module",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "lint:inspect": "eslint-config-inspector",
+    "check:types": "vue-tsc"
+  },
+  "devDependencies": {
+    "@jellyfin-vue/configs": "*",
+    "find-up-simple": "1.0.0",
+    "pretty-bytes": "6.1.1",
+    "sonda": "0.7.1",
+    "vite": "6.0.11"
+  }
+}

@@ -16,17 +16,13 @@
           class="swiper-prev"
           icon
           variant="plain">
-          <VIcon>
-            <IMdiArrowLeft />
-          </VIcon>
+          <JIcon class="i-mdi:arrow-left" />
         </VBtn>
         <VBtn
           class="swiper-next"
           icon
           variant="plain">
-          <VIcon>
-            <IMdiArrowRight />
-          </VIcon>
+          <JIcon class="i-mdi:arrow-right" />
         </VBtn>
       </div>
 
@@ -48,10 +44,11 @@
           <ItemCard
             :item="item"
             :shape="shape"
-            margin
+
             text
-            overlay
-            link />
+            link
+            margin
+            overlay />
         </SwiperSlide>
       </Swiper>
     </VCol>
@@ -66,10 +63,9 @@ import 'swiper/css/free-mode';
 import 'swiper/css/virtual';
 import { A11y, FreeMode, Navigation, Virtual } from 'swiper/modules';
 import { Swiper, SwiperSlide } from 'swiper/vue';
-import { v4 } from 'uuid';
-import { computed } from 'vue';
+import { computed, useId } from 'vue';
 import { useDisplay, useTheme } from 'vuetify';
-import { CardShapes } from '@/utils/items';
+import { CardShapes } from '#/utils/items';
 
 const { title, items, shape } = defineProps<{
   title: string;
@@ -77,7 +73,7 @@ const { title, items, shape } = defineProps<{
   shape?: CardShapes;
 }>();
 
-const uuid = v4();
+const uuid = useId();
 const display = useDisplay();
 const theme = useTheme();
 

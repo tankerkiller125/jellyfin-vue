@@ -2,14 +2,14 @@
   <div>
     <VForm
       v-model="valid"
-      :disabled="loading"
+      :disabled="loading || disabled"
       @submit.prevent="userLogin">
       <VTextField
         v-if="!user"
         v-model="login.username"
         variant="outlined"
-        autofocus
         hide-details
+        autofocus
         :label="$t('username')"
         :rules="rules" />
       <VTextField
@@ -18,9 +18,13 @@
         hide-details
         class="mt-4"
         :label="$t('password')"
-        :append-inner-icon="showPassword ? IconEyeOff : IconEye"
-        :type="showPassword ? 'text' : 'password'"
-        @click:append-inner="() => (showPassword = !showPassword)" />
+        :type="showPassword ? 'text' : 'password'">
+        <template #append-inner>
+          <JIcon
+            :class="showPassword ? 'i-mdi:eye-off' : 'i-mdi:eye'"
+            @click.passive="() => (showPassword = !showPassword)" />
+        </template>
+      </VTextField>
       <VCheckbox
         v-model="login.rememberMe"
         hide-details
@@ -41,7 +45,7 @@
             {{ $t('changeServer') }}
           </VBtn>
           <VBtn
-            v-else-if="remote.auth.currentServer?.PublicUsers.length"
+            v-else-if="remote.auth.currentServer.value?.PublicUsers.length"
             block
             size="large"
             variant="elevated"
@@ -51,7 +55,7 @@
         </VCol>
         <VCol class="mr-2">
           <VBtn
-            :disabled="!valid"
+            :disabled="!valid || disabled"
             :loading="loading"
             block
             size="large"
@@ -68,25 +72,19 @@
 
 <script setup lang="ts">
 import type { UserDto } from '@jellyfin/sdk/lib/generated-client';
-import IconEye from 'virtual:icons/mdi/eye';
-import IconEyeOff from 'virtual:icons/mdi/eye-off';
 import { ref, shallowRef } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRouter } from 'vue-router';
-import { fetchIndexPage } from '@/utils/items';
-import { remote } from '@/plugins/remote';
-import { getJSONConfig } from '@/utils/external-config';
+import { fetchIndexPage } from '#/utils/items';
+import { remote } from '#/plugins/remote';
+import { jsonConfig } from '#/utils/external-config';
 
-const { user } = defineProps<{ user?: UserDto }>();
+const { user, disabled } = defineProps<{ user?: UserDto; disabled?: boolean }>();
 
 defineEmits<{
   change: [];
 }>();
 
-const jsonConfig = await getJSONConfig();
 const { t } = useI18n();
-
-const router = useRouter();
 
 const valid = shallowRef(false);
 const login = ref({ username: '', password: '', rememberMe: true });
@@ -121,9 +119,7 @@ async function userLogin(): Promise<void> {
      * loading spinner active until we redirect the user.
      */
     await fetchIndexPage();
-
-    await router.replace('/');
-  } finally {
+  } catch {
     loading.value = false;
   }
 }

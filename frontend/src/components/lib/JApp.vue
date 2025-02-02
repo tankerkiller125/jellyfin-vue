@@ -8,10 +8,14 @@
       data-jellyfin-css-vars>
       :root {
       <template v-if="isLoading">
-        cursor: wait;
+        cursor: progress;
       </template>
-      --j-color-background: rgb(var(--v-theme-background));
+      --j-theme-transition-duration: 0.3s;
+      --j-theme-color-background: var(--v-theme-background);
+      --j-theme-color-menu: var(--v-theme-menu);
       --j-font-family: '{{ typography }}';
+      --j-border-opacity: 0.12;
+      --j-border-color: 255, 255, 255;
       }
     </component>
     <!-- eslint-enable @intlify/vue-i18n/no-raw-text vue/require-component-is -->
@@ -24,19 +28,19 @@
  * TODO: Investigate or propose an RFC to allow style tags inside SFCs
  */
 import { computed } from 'vue';
-import { useLoading } from '@/composables/use-loading';
-import { DEFAULT_TYPOGRAPHY } from '@/store';
-import { clientSettings } from '@/store/client-settings';
+import { useLoading } from '#/composables/use-loading';
+import { DEFAULT_TYPOGRAPHY } from '#/store';
+import { clientSettings } from '#/store/client-settings';
 
 const { isLoading } = useLoading();
 
 const typography = computed(() => {
-  if (clientSettings.typography === 'system') {
+  if (clientSettings.state.value.typography === 'system') {
     return 'system-ui';
-  } else if (clientSettings.typography === 'default') {
+  } else if (clientSettings.state.value.typography === 'default') {
     return DEFAULT_TYPOGRAPHY;
   } else {
-    return clientSettings.typography;
+    return clientSettings.state.value.typography;
   }
 });
 </script>

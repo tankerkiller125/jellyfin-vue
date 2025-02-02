@@ -1,9 +1,9 @@
 import { useWebSocket } from '@vueuse/core';
 import { destr } from 'destr';
 import { computed, watch } from 'vue';
+import { isNil, sealed } from '@jellyfin-vue/shared/validation';
 import auth from './auth';
 import sdk from './sdk';
-import { isNil, sealed } from '@/utils/validation';
 
 interface WebSocketMessage {
   MessageType: string;
@@ -17,13 +17,13 @@ class RemotePluginSocket {
    */
   private readonly _socketUrl = computed(() => {
     if (
-      auth.currentUserToken
-      && auth.currentServer
+      auth.currentUserToken.value
+      && auth.currentServer.value
       && sdk.deviceInfo.id
       && sdk.api?.basePath
     ) {
       const socketParameters = new URLSearchParams({
-        api_key: auth.currentUserToken,
+        api_key: auth.currentUserToken.value,
         deviceId: sdk.deviceInfo.id
       }).toString();
 
@@ -35,11 +35,17 @@ class RemotePluginSocket {
 
   private readonly _keepAliveMessage = 'KeepAlive';
   private readonly _forceKeepAliveMessage = 'ForceKeepAlive';
+  private readonly _updateInterval = '0,1';
   /**
    * Formats the message to be sent to the socket
    */
   private readonly _webSocket = useWebSocket(this._socketUrl, {
-    autoReconnect: { retries: () => true }
+    autoReconnect: true,
+    onConnected: () => {
+      this.sendToSocket('ScheduledTasksInfoStart', this._updateInterval);
+      this.sendToSocket('ActivityLogEntryStart', this._updateInterval);
+      this.sendToSocket('SessionsStart', this._updateInterval);
+    }
   });
 
   private readonly _parsedmsg = computed<WebSocketMessage | undefined>(() => destr(this._webSocket.data.value));

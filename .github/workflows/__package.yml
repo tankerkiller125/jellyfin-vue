@@ -44,27 +44,36 @@ jobs:
           - Windows
     defaults:
       run:
-        working-directory: packaging/tauri
+        working-directory: ${{ env.WORKING_DIR }}
+
     env:
-      ARTIFACTS_PATH: |
-        ${{ matrix.platform == 'ubuntu' && 'packaging/tauri/target/release/bundle/appimage_deb' || '' }}
-        ${{ matrix.platform == 'macos' && 'packaging/tauri/target/release/bundle/macos' || '' }}
-        ${{ matrix.platform == 'windows' && 'packaging/tauri/target/release/jellyfin-vue-tauri.exe' || '' }}
+      WORKING_DIR: packaging/tauri
+      ARTIFACT_NAME: jellyfin-vue_${{ matrix.platform }}
+      ARTIFACTS_PATH: ${{
+          format('target/release/{0}', matrix.platform == 'windows' && 'jellyfin-vue-tauri.exe' ||
+          format('bundle/*/*.{0}', matrix.platform == 'macos' && 'dmg' || 'AppImage'))
+        }}
 
     runs-on: ${{ matrix.platform }}-latest
     steps:
       - name: Checkout ⬇️
-        uses: actions/checkout@v4.1.7
+        uses: actions/checkout@v4.2.2
         with:
           ref: ${{ inputs.commit || github.sha }}
           show-progress: false
 
       - name: Setup node environment ⚙️
-        uses: actions/setup-node@v4.0.3
+        uses: actions/setup-node@v4.2.0
         with:
-          node-version: 20
+          node-version: lts/*
           check-latest: true
           cache: 'npm'
+
+      - name: Setup Rust Toolchain and cache 🦀
+        uses: actions-rust-lang/setup-rust-toolchain@v1.10.1
+        with:
+          cache-key: tauri-${{ runner.os }}
+          cache-workspaces: ${{ env.WORKING_DIR }}
 
       - name: Install npm dependencies 📦
         run: npm ci --no-audit
@@ -78,18 +87,20 @@ jobs:
       - name: Build application 🛠️
         run: npm run build
 
-      - name: Create provenance attestation 🔏
-        uses: actions/attest-build-provenance@v1.4.3
-        continue-on-error: true
-        with:
-          subject-path: ${{ env.ARTIFACTS_PATH }}
-
       - name: Upload built application artifact ⬆️🐧🍎🪟
-        uses: actions/upload-artifact@v4.4.0
+        uses: actions/upload-artifact@v4.6.0
+        id: artifact
         with:
           compression-level: 0
-          name: jellyfin-vue_${{ matrix.platform }}
-          path: ${{ env.ARTIFACTS_PATH }}
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${{ env.WORKING_DIR }}/${{ env.ARTIFACTS_PATH }}
+
+      - name: Create provenance attestation 🔏
+        uses: actions/attest-build-provenance@v2.2.0
+        continue-on-error: true
+        with:
+          subject-name: ${{ env.ARTIFACT_NAME }}
+          subject-digest: sha256:${{ steps.artifact.outputs.artifact-digest }}
 
   docker_inputs:
     name: Prepare Docker build variables 🏷️🐳
@@ -156,38 +167,42 @@ jobs:
 
   docker:
     name: Docker image for ${{ matrix.platform }} 💿🐳
-    runs-on: ubuntu-latest
+    runs-on: ${{ contains(matrix.platform, 'arm') && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
     needs: docker_inputs
     strategy:
       fail-fast: false
       matrix:
         platform: ${{ fromJson(inputs.architectures) }}
 
+    env:
+      ARTIFACT_NAME: docker_image-linux_${{ matrix.platform }}
+
     steps:
       - name: Checkout ⬇️
-        uses: actions/checkout@v4.1.7
+        uses: actions/checkout@v4.2.2
         with:
           ref: ${{ inputs.commit || github.sha }}
           show-progress: false
 
       - name: Configure QEMU ⚙️
-        uses: docker/setup-qemu-action@v3.2.0
+        uses: docker/setup-qemu-action@v3.3.0
 
       - name: Configure Docker Buildx ⚙️
-        uses: docker/setup-buildx-action@v3.6.1
+        uses: docker/setup-buildx-action@v3.8.0
+        with:
+          cleanup: false
+          version: latest
 
       - name: Build images 🛠️
-        uses: docker/build-push-action@v6.7.0
+        uses: docker/build-push-action@v6.13.0
         id: image
         with:
           context: .
           file: packaging/docker/Dockerfile
           platforms: ${{ format('linux/{0}', matrix.platform) }}
-          cache-from: |
-            type=gha,scope=buildx-${{ matrix.platform }}
+          no-cache: true
           cache-to: |
             type=local,mode=min,dest=/tmp/${{ env.REGISTRY_IMAGE }}/cache/${{ matrix.platform }}
-            type=gha,mode=min,ignore-error=true,scope=buildx-${{ matrix.platform }}
           outputs: type=docker,dest=docker_image.tar
           build-args: |
             ${{ inputs.commit == '' && 'IS_STABLE=1' || '' }}
@@ -196,20 +211,22 @@ jobs:
             ${{ needs.docker_inputs.outputs.tags }}
 
       - name: Upload Docker image as artifact ⬆️📦
-        uses: actions/upload-artifact@v4.4.0
+        uses: actions/upload-artifact@v4.6.0
+        id: artifact
         with:
           compression-level: 0
-          name: docker_image-linux_${{ matrix.platform }}
+          name: ${{ env.ARTIFACT_NAME }}
           path: docker_image.tar
 
       - name: Create provenance attestation 🔏
-        uses: actions/attest-build-provenance@v1.4.3
+        uses: actions/attest-build-provenance@v2.2.0
         continue-on-error: true
         with:
-          subject-path: docker_image.tar
+          subject-name: ${{ env.ARTIFACT_NAME }}
+          subject-digest: sha256:${{ steps.artifact.outputs.artifact-digest }}            
 
       - name: Upload cache artifact ⬆️⚙️
-        uses: actions/upload-artifact@v4.4.0
+        uses: actions/upload-artifact@v4.6.0
         if: ${{ inputs.push }}
         with:
           compression-level: 0
@@ -222,6 +239,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: docker
 
+    env:
+      ARTIFACT_NAME: frontend
+
     steps:         
       - name: Download Docker image artifact 📦⬇️
         uses: actions/download-artifact@v4.1.8
@@ -231,20 +251,24 @@ jobs:
       - name: Extract built client from Docker image 🗜️
         run: |
           docker load < docker_image.tar
-          docker cp $(docker create --name jf $(docker images --filter=reference='${{ env.REGISTRY_IMAGE }}' -q | head -n 1)):/usr/share/nginx/html/ ./dist
-
-      - name: Create provenance attestation 🔏
-        uses: actions/attest-build-provenance@v1.4.3
-        continue-on-error: true
-        with:
-          subject-path: dist
+          IMAGE_SHA=$(docker images --filter=reference='${{ env.REGISTRY_IMAGE }}' -q | head -n 1)
+          ASSETS=$(docker inspect $IMAGE_SHA --format='{{range .Config.Env}}{{println .}}{{end}}' | grep ^ASSETS= | cut -d '=' -f2-)
+          docker cp $(docker create --name jf $IMAGE_SHA):$ASSETS/ ./dist
 
       - name: Upload client artifact ⬆️💻
-        uses: actions/upload-artifact@v4.4.0
+        uses: actions/upload-artifact@v4.6.0
+        id: artifact
         with:
           compression-level: 0
-          name: frontend
+          name: ${{ env.ARTIFACT_NAME }}
           path: dist
+
+      - name: Create provenance attestation 🔏
+        uses: actions/attest-build-provenance@v2.2.0
+        continue-on-error: true
+        with:
+          subject-name: ${{ env.ARTIFACT_NAME }}
+          subject-digest: sha256:${{ steps.artifact.outputs.artifact-digest }}
 
   docker_merge:
     name: Merge Docker images 💿🐳
@@ -262,16 +286,19 @@ jobs:
           path: /tmp/${{ env.REGISTRY_IMAGE }}/cache/
   
       - name: Checkout ⬇️
-        uses: actions/checkout@v4.1.7
+        uses: actions/checkout@v4.2.2
         with:
           ref: ${{ inputs.commit || github.sha }}
           show-progress: false
 
       - name: Configure QEMU ⚙️
-        uses: docker/setup-qemu-action@v3.2.0
+        uses: docker/setup-qemu-action@v3.3.0
 
       - name: Configure Docker Buildx ⚙️
-        uses: docker/setup-buildx-action@v3.6.1
+        uses: docker/setup-buildx-action@v3.8.0
+        with:
+          cleanup: false
+          version: latest
 
       - name: Login to Docker Hub 🔑
         uses: docker/login-action@v3.3.0
@@ -287,7 +314,7 @@ jobs:
           password: ${{ secrets.JF_BOT_TOKEN }}
 
       - name: Create multiplatform image ${{ inputs.push && 'and push 🛠️⬆️' || '🛠️' }} 
-        uses: docker/build-push-action@v6.7.0
+        uses: docker/build-push-action@v6.13.0
         id: image
         with:
           context: .
@@ -307,6 +334,7 @@ jobs:
 
       - name: Remove cache artifacts 🗑️
         uses: geekyeggo/delete-artifact@v5.1.0
+        continue-on-error: true
         with:
           name: |
             buildx-*

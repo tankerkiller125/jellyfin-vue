@@ -3,13 +3,14 @@
     icon
     class="align-self-center"
     :disabled="
-      !playbackManager.currentItemParsedSubtitleTracks ||
-        playbackManager.currentItemParsedSubtitleTracks.length === 0
+      !playerElement.currentItemParsedSubtitleTracks.value ||
+        playerElement.currentItemParsedSubtitleTracks.value.length === 0
     ">
-    <VIcon>
-      <IMdiClosedCaption v-if="playbackManager.currentSubtitleTrack" />
-      <IMdiClosedCaptionOutline v-else />
-    </VIcon>
+    <JIcon
+      :class="{
+        'i-mdi:closed-caption': playbackManager.currentSubtitleTrack.value,
+        'i-mdi:closed-caption-outline': !playbackManager.currentSubtitleTrack.value
+      }" />
     <VTooltip
       :text="$t('subtitles')"
       location="top" />
@@ -22,15 +23,16 @@
         <VListItem
           v-for="track of tracks"
           :key="track.srcIndex"
-          :append-icon="
-            track.srcIndex === playbackManager.currentSubtitleStreamIndex
-              ? IMdiCheck
-              : undefined
-          "
           :title="track.label"
           @click="
-            playbackManager.currentSubtitleStreamIndex = track.srcIndex
-          " />
+            playbackManager.currentSubtitleTrack.value = track.srcIndex
+          ">
+          <template
+            v-if="track.srcIndex === playbackManager.currentSubtitleTrack.value?.Index"
+            #prepend>
+            <JIcon class="i-mdi:check uno-w-10" />
+          </template>
+        </VListItem>
       </VList>
     </VMenu>
   </VBtn>
@@ -38,22 +40,22 @@
 
 <script setup lang="ts">
 import { SubtitleDeliveryMethod } from '@jellyfin/sdk/lib/generated-client';
-import IMdiCheck from 'virtual:icons/mdi/check';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { playbackManager } from '@/store/playback-manager';
+import { playbackManager } from '#/store/playback-manager';
+import { playerElement } from '#/store/player-element';
 
 const menuModel = defineModel<boolean>();
 
 const { t } = useI18n();
 
 const tracks = computed(() => {
-  const subs = playbackManager.currentItemParsedSubtitleTracks;
+  const subs = playerElement.currentItemParsedSubtitleTracks.value;
 
   return [
     {
       label: t('disabled'),
-      srcIndex: undefined,
+      srcIndex: -1,
       type: SubtitleDeliveryMethod.External
     },
     ...(subs ?? [])
