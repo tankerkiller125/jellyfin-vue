@@ -1,6 +1,6 @@
 <template>
   <svg
-    class="uno-object-contain uno-aspect-square uno-w-15"
+    class="uno-object-contain uno-aspect-square uno-w-15 uno-content-visibility-auto"
     :class="{
       'j-progress-circular--indeterminate': indeterminate,
     }"
@@ -15,7 +15,7 @@
     aria-valuemax="100"
     :aria-valuenow="indeterminate ? undefined : normalizedValue"
     :aria-valuetext="indeterminate ? t('loading') : t('percentCompleted', { value: normalizedValue })"
-    v-bind="getBaseProps($attrs, false)">
+    v-bind="getBaseProps($attrs)">
     <circle
       class="j-progress-circular--underlay uno-stroke-current uno-z-1"
       fill="transparent"
@@ -59,7 +59,7 @@ const CIRCUMFERENCE = 2 * Math.PI * MAGIC_RADIUS_CONSTANT;
 </script>
 
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n';
+import { useTranslation } from 'i18next-vue';
 import { computed } from 'vue';
 import { clamp, toPx } from '#/util/helpers';
 import { getBaseProps } from '#/util/props';
@@ -75,7 +75,7 @@ const { indeterminate, innerProgress, value = 0 } = defineProps<{
 
 const normalizedValue = computed(() => clamp(value, 0, 100));
 const strokeDashoffset = computed(() => toPx(CIRCUMFERENCE * (1 - normalizedValue.value / 100)));
-const { t } = useI18n();
+const { t } = useTranslation();
 </script>
 
 <style scoped>

@@ -3,11 +3,11 @@
   <NavigationDrawer
     :order="display.mobile.value ? -1 : undefined"
     :drawer-items="drawerItems" />
-  <VMain>
+  <JMain>
     <div class="pa-s">
       <slot />
     </div>
-  </VMain>
+  </JMain>
   <AudioControls />
   <MiniVideoPlayer
     v-if="
@@ -29,11 +29,11 @@ const navDrawer = ref(!display.mobile.value);
 const { views } = await fetchIndexPage();
 
 const drawerItems = computed<DrawerItem[]>(() => {
-  return (views.value ?? []).map((view: BaseItemDto) => {
+  return views.value.map((view: BaseItemDto) => {
     return {
       icon: getLibraryIcon(view.CollectionType),
       title: view.Name ?? '',
-      to: `/library/${String(view.Id)}`
+      to: `/library/${view.Id}`
     };
   });
 });

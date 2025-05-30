@@ -3,8 +3,8 @@
   "type": "module",
   "description": "Shared code between Jellyfin Vue packages",
   "exports": {
-    "./validation": "./src/validation.ts",
-    "./html": "./src/html.ts"
+    "./*": "./src/universal/*.ts",
+    "./node/*": "./src/node/*.ts"
   },
   "scripts": {
     "lint": "eslint .",
@@ -14,11 +14,23 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "@jellyfin-vue/configs": "*",
-    "vitest": "3.0.5"
+    "@jellyfin-vue/configs": "*"
   },
   "dependencies": {
-    "dompurify": "3.2.3",
-    "marked": "15.0.6"
+    "dompurify": "3.2.6",
+    "marked": "15.0.12"
+  },
+  "peerDependencies": {
+    "@vue/shared": "*",
+    "type-fest": "*",
+    "vitest": "*"
+  },
+  "peerDependenciesMeta": {
+    "type-fest": {
+      "optional": true
+    },
+    "vitest": {
+      "optional": true
+    }
   }
 }

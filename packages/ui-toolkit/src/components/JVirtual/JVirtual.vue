@@ -11,16 +11,18 @@
       <slot :item="items[0]" />
     </Component>
     <template v-if="visibleItems.length">
-      <JSlot
-        v-for="internal_item in visibleItems"
-        :key="indexAsKey ? internal_item.index : undefined"
-        class="uno-transform-gpu"
-        :class="gridClass"
-        :style="internal_item.style">
-        <slot
-          :item="items[internal_item.index]"
-          :index="internal_item.index" />
-      </JSlot>
+      <template v-for="internal_item in visibleItems">
+        <JSlot
+          v-if="items[internal_item.index]"
+          :key="indexAsKey ? internal_item.index : undefined"
+          class="uno-transform-gpu"
+          :class="gridClass"
+          :style="internal_item.style">
+          <slot
+            :item="items[internal_item.index]"
+            :index="internal_item.index" />
+        </JSlot>
+      </template>
     </template>
   </Component>
 </template>
@@ -33,11 +35,11 @@ import {
 } from '@vueuse/core';
 import {
   computed,
-  onBeforeUnmount,
   shallowRef,
   watch,
   type StyleValue,
-  useTemplateRef
+  useTemplateRef,
+  onScopeDispose
 } from 'vue';
 import { releaseProxy, wrap } from 'comlink';
 import { isNil, isUndef } from '@jellyfin-vue/shared/validation';
@@ -51,7 +53,7 @@ import {
 } from './pipeline';
 import type { IJVirtualWorker } from './j-virtual.worker';
 import JVirtualWorker from './j-virtual.worker?worker';
-import { windowSize } from '#/store.ts';
+import { windowSize } from '#/store';
 import JSlot from '#/components/JSlot.vue';
 import { toPx } from '#/util/helpers';
 
@@ -202,10 +204,8 @@ const visibleItems = computed<InternalItem[]>((previous) => {
 });
 const scrollParents = computed(() => rootRef.value && getScrollParents(rootRef.value));
 const scrollTargets = computed(() => {
-  const el = rootRef.value;
-
-  if (el && el instanceof HTMLElement) {
-    const { vertical, horizontal } = getScrollParents(el);
+  if (scrollParents.value) {
+    const { vertical, horizontal } = scrollParents.value;
 
     /**
      * If the scrolling parent is the doc root, use window instead as using
@@ -264,7 +264,7 @@ const populateCache = (() => {
    * We cache the items to avoid the extra overhead of sending the items
    * to the worker when scrolling fast. We cache 2 times the buffer length
    */
-  function populateCache(): void {
+  return function (): void {
     if (!isUndef(resizeMeasurement.value)
       && Number.isFinite(bufferLength.value)
       && Number.isFinite(bufferOffset.value)
@@ -288,9 +288,7 @@ const populateCache = (() => {
         void setCache(i);
       }
     }
-  }
-
-  return populateCache;
+  };
 })();
 
 useEventListener(scrollTargets, 'scroll', () => {
@@ -327,7 +325,7 @@ watch([bufferLength, resizeMeasurement, itemsLength, bufferOffset], (val, oldVal
   populateCache();
 });
 
-onBeforeUnmount(() => {
+onScopeDispose(() => {
   worker[releaseProxy]();
   workerInstance.terminate();
 });

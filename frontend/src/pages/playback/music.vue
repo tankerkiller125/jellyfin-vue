@@ -1,5 +1,5 @@
 <template>
-  <VMain v-if="playbackManager.queue">
+  <JMain v-if="playbackManager.queue">
     <VAppBar color="transparent">
       <AppBarButtonLayout @click="$router.back()">
         <template #icon>
@@ -9,7 +9,7 @@
       <VSpacer />
       <AppBarButtonLayout @click="isVisualizing = !isVisualizing">
         <template #icon>
-          <JIcon :class="isVisualizing ? 'i-dashicons:album' : 'mdi:chart-bar'" />
+          <JIcon :class="isVisualizing ? 'i-dashicons:album' : 'i-mdi:chart-bar'" />
         </template>
       </AppBarButtonLayout>
     </VAppBar>
@@ -78,7 +78,7 @@
         </VCol>
       </VRow>
     </VCol>
-  </VMain>
+  </JMain>
 </template>
 
 <route lang="yaml">

@@ -1,10 +1,9 @@
-import type { Linter } from 'eslint';
+import { defineConfig } from 'eslint/config';
 import tseslint from 'typescript-eslint';
 import sonarjs from 'eslint-plugin-sonarjs';
 import regexp from 'eslint-plugin-regexp';
 import jsdoc from 'eslint-plugin-jsdoc';
 import eslintImportX from 'eslint-plugin-import-x';
-// @ts-expect-error - No types available
 import vueScopedCSS from 'eslint-plugin-vue-scoped-css';
 import css from 'eslint-plugin-css';
 import vue from 'eslint-plugin-vue';
@@ -22,7 +21,7 @@ const recommendedKey = 'flat/recommended';
 const flatArrayOfObjects = (obj: unknown[]) => Object.assign({}, ...obj);
 
 /** Common TypeScript and Vue rules */
-const common = [
+const common = defineConfig([
   {
     ...flatArrayOfObjects(tseslint.configs.strictTypeChecked),
     name: '(@jellyfin-vue/configs/lint/typescript-vue - typescript-eslint) Extended config from plugin (strict type checking)'
@@ -136,10 +135,10 @@ const common = [
       'sonarjs/function-return-type': 'off'
     }
   }
-] satisfies Linter.Config[];
+]);
 
 /** Vue SFC only rules */
-const vue_config = [
+const vue_config = defineConfig([
   ...vue.configs[recommendedKey].map((config) => {
     /**
      * Specified above, unnecessary to overwrite
@@ -191,11 +190,11 @@ const vue_config = [
             lang: 'ts'
           }
         }
-      ]
-
+      ],
+      'vue/define-props-destructuring': 'error'
     }
   }
-] satisfies Linter.Config[];
+]);
 
 /**
  * Gets the base configuration for TypeScript files only or both Vue and TypeScript
@@ -203,12 +202,12 @@ const vue_config = [
  * @param enableVue - Whether to apply the base config for Vue files
  * @returns
  */
-export function getTSVueConfig(enableVue = true, tsconfigRootDir = import.meta.dirname): Linter.Config[] {
+export function getTSVueConfig(enableVue = true, tsconfigRootDir = import.meta.dirname) {
   const result = [
     ...(enableVue ? vue_config : []),
     ...common.map(conf => ({
       ...conf, files: enableVue ? vueAndTsFiles : tsFiles
-    }))] satisfies Linter.Config[];
+    }))];
 
   const langOptions = {
     ecmaVersion: 2024,
@@ -216,7 +215,7 @@ export function getTSVueConfig(enableVue = true, tsconfigRootDir = import.meta.d
     globals: {
       ...globals.browser
     }
-  };
+  } as const;
 
   const sharedParserOptions = {
     projectService: true,
@@ -262,5 +261,5 @@ export function getTSVueConfig(enableVue = true, tsconfigRootDir = import.meta.d
     result.push(base_vue_parser);
   }
 
-  return result;
+  return defineConfig(result);
 }
